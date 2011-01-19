@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+  <title>History of visited directories in BASH</title>
+</head>
+<body>
+<center>
+<h1>History of visited directories in BASH
+</h1>
+</center>
+<h2>Deficiencies of the CD command<br>
+</h2>
+<p>Do you realise how many times you type "cd" per day? Do you realise
+how many times you retype the same directory names again and again?
+Ever since I migrated from 4DOS/NT shell on Windows to using
+Bash on Unix
+platforms, I was missing its "cd" history access. In 4NT the history of
+the visited directories can be navigated by Ctrl+PgUp/Dn. Every time
+you go to a new directory by "cd", its name automaticly goes on top of
+an easily accessible history list.<br>
+</p>
+<p>In Bash "cd -" switches between the last two directories. This is a
+function in the right direction but many times I wanted to go to the
+directory before the last, I dreamed for something like&nbsp; "cd -2".<br>
+</p>
+<p>Brief scripting restores some sanity in the directory navigation of
+Bash.<br>
+</p>
+<h2>Installing the CD history function</h2>
+<p>To install the modified CD function, copy <a href="acd_func.sh">acd_func.sh</a>
+to your home directory. At the end of your .bashrc add "source
+acd_func.sh". Restart your bash session and then type "cd --".<br>
+</p>
+<pre><i>lotzmana@safe$</i> cd --<br>0  ~<br><br></pre>
+<p>Type "cd --" to verify if the installation works. Above you may
+see the result "0 ~". This shows that you have one directory in your
+history.<br>
+</p>
+<pre><i>lotzmana@safe$</i> cd work<br><i>lotzmana@safe$</i> cd scripts<br><i>lotzmana@safe$</i> pwd<br>/home/petarma/work/scripts<br><i>lotzmana@safe$</i> cd --<br> 0  ~/work/scripts<br> 1  ~/work<br> 2  ~<br><i>lotzmana@safe$</i> cd -2<br><i>lotzmana@safe$</i> pwd<br>/home/petarma<br><br></pre>
+<p>The "cd" command works as usual. The new feature is the history of
+the last 10 directories and "cd" expanded to display and
+access it. "cd --" (or simply pressing ctrl+w) shows the history. In
+front of every directory name you see number. "cd -num" with the
+number you want, jumps to the corresponding directory from the history.<br>
+</p>
+<h2>How CD with history works<br>
+</h2>
+<pre><i>lotzmana@safe$</i> nl -w2 -s' '  acd_func.sh<br> 1 # do ". acd_func.sh"<br> 2 # acd_func 1.0.5, 10-nov-2004<br> 3 # petar marinov, http:/geocities.com/h2428, this is public domain<br><br> 4 cd_func ()<br> 5 {<br> 6   local x2 the_new_dir adir index<br> 7   local -i cnt<br><br> 8   if [[ $1 ==  "--" ]]; then<br> 9     dirs -v<br>10     return 0<br>11   fi<br><br>12   the_new_dir=$1<br>13   [[ -z $1 ]] &amp;&amp; the_new_dir=$HOME<br><br>14   if [[ ${the_new_dir:0:1} == '-' ]]; then<br>15     #<br>16     # Extract dir N from dirs<br>17     index=${the_new_dir:1}<br>18     [[ -z $index ]] &amp;&amp; index=1<br>19     adir=$(dirs +$index)<br>20     [[ -z $adir ]] &amp;&amp; return 1<br>21     the_new_dir=$adir<br>22   fi<br><br>23   #<br>24   # '~' has to be substituted by ${HOME}<br>25   [[ ${the_new_dir:0:1} == '~' ]] &amp;&amp; the_new_dir="${HOME}${the_new_dir:1}"<br><br>26   #<br>27   # Now change to the new dir and add to the top of the stack<br>28   pushd "${the_new_dir}" &gt; /dev/null<br>29   [[ $? -ne 0 ]] &amp;&amp; return 1<br>30   the_new_dir=$(pwd)<br><br>31   #<br>32   # Trim down everything beyond 11th entry<br>33   popd -n +11 2&gt;/dev/null 1&gt;/dev/null<br><br>34   #<br>35   # Remove any other occurence of this dir, skipping the top of the stack<br>36   for ((cnt=1; cnt &lt;= 10; cnt++)); do<br>37     x2=$(dirs +${cnt} 2&gt;/dev/null)<br>38     [[ $? -ne 0 ]] &amp;&amp; return 0<br>39     [[ ${x2:0:1} == '~' ]] &amp;&amp; x2="${HOME}${x2:1}"<br>40     if [[ "${x2}" == "${the_new_dir}" ]]; then<br>41       popd -n +$cnt 2&gt;/dev/null 1&gt;/dev/null<br>42       cnt=cnt-1<br>43     fi<br>44   done<br><br>45   return 0<br>46 }<br><br>47 alias cd=cd_func<br><br>48 if [[ $BASH_VERSION &gt; "2.05a" ]]; then<br>49   # ctrl+w shows the menu<br>50   bind -x "\"\C-w\":cd_func -- ;"<br>51 fi<br><br></pre>
+<p>4-7: cd_func() is a function, variables are declared local and are
+automaticly deleted at the end of the function</p>
+<p>8-11: if the function is called with a parameter "--" then it dumps
+the current content of the directory history. It is stored in the same
+place pushd/popd keep names -- the directory stack. Storage is the
+same, access is different.<br>
+</p>
+<p>12-13: Argument $1 is transferred into $the_new_dir for some
+postprocessing. Immediately after that, if there are no parameters we
+assume that user asked for his home directory<br>
+</p>
+<p>14-22: If parameter begins with '-' then user attempts access to one
+of the names in the history list. $index gets the number of the
+directory, then into $adir we extract the correspondent name. For
+example,&nbsp; "dirs +3" dumps directory #3 from the stack.<br>
+</p>
+<p>At this point in $the_new_dir we have either a name specified
+explicitely as a parameter or a name obtained from the history of
+previously visited directories.<br>
+</p>
+<p>23-25: If a directory name begins with '~' then this character has
+to be replaced by the actual home directory name.<br>
+</p>
+<p>26-30: pushd does the actual CD. It also puts the name on top of the
+directory stack. stdout is redirected to /dev/null in order to
+completely imitate how CD works. Notice that any output to stderr, for
+example a message telling that the directory specified by the user
+doesn't exist will show up, which is again similar to what CD does. The
+function aborts if pushd fails. We also need the new directory name for
+further analysis and $the_new_dir carries it down the function.</p>
+<p>31-33: Keeping track of more than 10 directories is unproductive. As
+we have just pushd-ed one on top of the stack we trim down any that
+fall below 11
+names deep.<br>
+</p>
+<p>34-44: In a loop we walk through all the names in the directories
+stack.
+Any name that matches the new current directory is eliminated. Again,
+we have to translate any name from the list which begins with '~' to
+its format of fully expanded home directory.<br>
+</p>
+<p>47: We assign cd to be cd_func().<br>
+</p>
+<p>48-51: If bash version allowes for macros to be assigned we make
+ctrl+w to summon the history of visited directories.<br>
+</p>
+<p>This script defines a function. It must be source-d and not
+executed. This way cd_func() is parsed and stored in the current
+environment. Try "env"
+and you must see it after all environment variables.<br>
+</p>
+<h2>Documentation page of the script<br>
+</h2>
+Visit the <a href="acd_func.htm">manpage of ace_func.sh</a>.<br>
+<br>
+<hr>last updated: 3-nov-2004 | <a href="index.htm">home page</a> |
+the text of this page is public domain
+</body>
+</html>

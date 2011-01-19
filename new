@@ -1,0 +1,96 @@
+#!/usr/bin/perl -s
+#
+# new - start a new perl program
+#
+
+my $indent = 0;
+if ( ! $h ) {
+
+    if ( $n ) {
+print <<EOT;
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+EOT
+    }
+    else {
+print <<EOT;
+#!/usr/bin/perl -w
+#
+#
+#
+use strict;
+
+EOT
+   }
+
+}
+
+if ( $d ) {
+
+print <<'EOT';
+#
+#
+#
+my $some_dir = '/some/dir';
+opendir(my $dir_fh, $some_dir) || die "Can't opendir '$some_dir': $!\n";
+my @files = grep { /^./ && -f "$some_dir/$_" } readdir($dir_fh);
+closedir $dir_fh;
+
+EOT
+
+$indent = 4;
+
+}
+
+if ( $f ) {
+
+    my $file;
+    if ( $n ) {
+$file = sprintf <<'EOT';
+
+open (my $file_fh, $file) || die "Can't read '$file': $!\n";
+while (defined (my $line = <$file_fh>)) {
+
+    #
+
+}
+close $file_fh;
+
+EOT
+    }
+    else {
+$file = sprintf <<'EOT';
+
+open (FILE, $file) || die "Can't read '$file': $!\n";
+while (defined (my $line = <FILE>)) {
+
+    #
+
+}
+close FILE;
+
+EOT
+    }
+
+    if ( $indent ) {
+
+        my $ind = " " x $indent;
+        $file =~ s/\n(.)/\n$ind$1/g;
+
+        print 'for my $file ( @files ) {', "\n$file}\n";
+
+    }
+    else {
+
+        print q~my $file = 'file.txt';~, $/;
+
+        print $file;
+
+    }
+
+}

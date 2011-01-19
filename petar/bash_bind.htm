@@ -1,0 +1,125 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+  <title>Bind extended keys to BASH functions</title>
+</head>
+<body>
+<center>
+<h1>Bind extended keys to BASH functions<br>
+</h1>
+</center>
+<h2>Bind basics<br>
+</h2>
+<p>BASH's bind command permits three activities -- definition of new
+macros, definition of new key bindings for existing commands, and
+dumping the installed keybindings.<br>
+</p>
+<p>Macro is a string of characters&nbsp; binded to a key combination. A
+typical textbook example would be:<br>
+</p>
+<pre><i style="font-weight: bold;">lotzmana@safe$</i> bind '"\M-k"':"\"ls -f\""<br></pre>
+<p>It pastes "ls -f" when you press Alt+K. Later in life one usually
+finds that engaging the pre-existing keybinginds provides for some
+more inventive use of bind. More elaborate example follows.<br>
+</p>
+<p>Have you ever found yourself at the end of very long command just
+to remember that something else had to be executed before that, usually
+this means ctrl+c and more typing and retyping. The designers of the
+beloved 4NT
+thoughtfully provided ctrl+k to save the current line into history
+instead of executing it. Can't we forge something similar in bash?<br>
+</p>
+<pre><i style="font-weight: bold;">lotzmana@safe$</i> bind '"\M-k"':"\"\C-ahistory -s '\C-e'\C-m\"" <br></pre>
+<p>It binds a macro to Alt+K. The macro is not a plain text to be
+pasted but invokes some editing commands already binded to other keys.
+Imagine that you have already typed a long line, to save it you press
+ctrl+a (this moves the cursor to the beginning of the line), type
+"history -s ", press ctrl+e to go to the end and Enter (or ctrl+m) to
+execute. This is precisely the sequence of actions encoded in the macro
+binded to Alt+K.<br>
+</p>
+<p>PgUp in 4NT invokes a popup menu with the most recent commands for
+easy selection. While GUI programming is not an option, bind can
+still bring us closer to civilized life:<br>
+</p>
+<pre><i style="font-weight: bold;">lotzmana@safe$</i> bind '"\e[5~"':"\"history | tail -25\C-m\""</pre>
+<p>Explore the manpages of readline and bash for more details and
+options.<br>
+</p>
+<h2>Binding to keys that have no name definitions -- extended keys<br>
+</h2>
+<p>The binding to PgUp didn't use some key name but employed the
+extended ESC sequence which PgUp generates. On some terminals using the
+meta encoding, like M-k, might also not work. It just happens that
+there is
+no accepted standard for how functional keys are encoded. This might be
+an issue for the deployment of one single .bashrc in heterogenous
+OS/terminal environment.<br>
+</p>
+<p>For example on my xterm I have to define the macro like this:<br>
+</p>
+<pre><i style="font-weight: bold;">lotzmana@safe$</i> bind  '"\xeb"':"\"\C-ahistory -s '\C-e'\C-m\"" <br></pre>
+<p>How did I know that 0xeb is the character that Alt+K generates?
+Well, first approximation was to use the debug terminal of the <a
+ href="http://geocities.com/h2428/ww">WW
+multi-platform console editor</a>. The keyboard handler has a debug
+mode
+where it prints all the character sequences it couldn't match to known
+key combinations. Because this editor is not yet very popular I
+exported the knowledge into a handy standalone perl script. Start the
+script, press Alt+K, press 'x':<br>
+</p>
+<pre><i style="font-weight: bold;">lotzmana@safe$</i> perl keys.pl<br>press 'x' to exit<br>\xeb<br>restore console mode<br></pre>
+<p>Then use the hex sequence on the left-hand side of bind.<br>
+</p>
+<p>Moving back in time&nbsp; to the niceties of 4NT I remember that
+ctrl+left-arrow/ctrl+right-arrow moved cursor to the beginning of the
+previous or the next word. This is also available in bash --
+Alt+F/Alt+B, but why not have the real thing?! Here are the key
+sequences I need under xterm:<br>
+</p>
+<pre><i style="font-weight: bold;">lotzmana@safe$</i> perl keys.pl<br>press 'x' to exit<br>\x1b\x5b\x31\x3b\x35\x44<br>\x1b\x5b\x31\x3b\x35\x43<br>restore console mode<br><i
+ style="font-weight: bold;">lotzmana@safe$</i> bind '"\e\x5b\x31\x3b\x35\x44"':backward-word<br><i
+ style="font-weight: bold;">lotzmana@safe$</i> bind '"\e\x5b\x31\x3b\x35\x43"':forward-word<br></pre>
+<h2>List of useful keybindings of bash under xterm</h2>
+<p>In the course of the last few weeks I assembled a list of a few key
+definition bindings which I find useful. They either assign functions
+to new keys or link up function
+previously inaccessible because of differences in key definitions on
+xterm. Best
+is to add this to your .bashrc:<br>
+</p>
+<pre># Now map xterm's alternative keybindings to existing functionality<br># Some are simple translations to correspontend M- combinations<br># ctrl+left/right arrows:<br>bind '"\e\x5b\x31\x3b\x35\x44"':backward-word<br>bind '"\e\x5b\x31\x3b\x35\x43"':forward-word<br># alt+b/f:<br>bind '"\xe2"':'"\M-b"'<br>bind '"\xe6"':'"\M-f"'<br># atl+backspace:<br>bind '"\xff"':backward-kill-word<br># alt+'.':<br>bind '"\xae"':yank-last-arg<br># alt+k:<br>bind '"\xeb"':"\"\M-k\""<br># alt+w:<br>bind '"\xf7"':'"\M-w"'<br></pre>
+<p>Notice the way Alt+k is mapped to M-k, it is handy when you don't
+immediately know the name of the function you are assigning to, but
+only know the original keybinding. If you log in under other terminals
+you must use the keys.pl script to figure the keysequences of the keys
+you wish to bind there and add them to your .bashrc.<br>
+</p>
+<h2>Inside keys.pl<br>
+</h2>
+You can simply <a href="keys.pl">download keys.pl</a> and begin using
+it. If you are curious how it works, look at the source below and the
+explanation notes after that:<br>
+<pre><i style="font-weight: bold;">lotzmana@safe$</i> nl -w2 -s' '  keys.pl    <br> 1 #!/usr/bin/perl -w<br> 2 # keys.pl 1.0.0, 13-jul-2005<br> 3 # petar marinov, http:/geocities.com/h2428, this is public domain<br>   <br> 4 use strict;<br> 5 $| = 1;<br> 6 my $got = '';<br> 7 while (1) {<br> 8   # wait for a sequence to begin<br> 9   $got = getone() while (ord($got) == 0);<br>10   # process a sequence ($got already holds the first character)<br>11   while (ord($got) != 0) {<br>12     exit(0) if ($got eq 'x');<br>13     printf("\\x%02x", ord($got));<br>14     $got = getone();<br>15   }<br>16   print "\n";<br>17 }<br>18 exit(0);<br>   <br>19 BEGIN {<br>20   use POSIX qw(:termios_h);<br>21   use Fcntl;<br>   <br>22   my ($term, $oterm, $echo, $noecho);<br>23   $term = POSIX::Termios-&gt;new();<br>24   $term-&gt;getattr(fileno(STDIN));<br>25   $oterm = $term-&gt;getlflag();<br>   <br>26   # puts console in a raw mode -- permits non-blocking reading<br>27   sub raw {<br>28     my $flags = 0;<br>29     $term-&gt;setlflag($oterm &amp; ~(ECHO | ECHOK | ICANON));<br>30     $term-&gt;setcc(VTIME, 1);<br>31     $term-&gt;setattr(fileno(STDIN), TCSANOW);<br>32     fcntl(STDIN, F_GETFL, $flags)<br>33       or die "Couldn't get flags for HANDLE : $!\n";<br>34     $flags |= O_NONBLOCK;<br>35     fcntl(STDIN, F_SETFL, $flags)<br>36       or die "Couldn't set flags for HANDLE: $!\n";<br>37   }<br>   <br>38   # restores console to original mode<br>39   sub cooked {<br>40     print "restore console mode\n";<br>41     $term-&gt;setlflag($oterm);<br>42     $term-&gt;setcc(VTIME, 0);<br>43     $term-&gt;setattr(fileno(STDIN), TCSANOW);<br>44   }<br>   <br>45   # reads character or times out<br>46   sub getone {<br>47     my $key = ' ';<br>48     my ($rv, $rin, $win, $ein);49     my ($nfound, $timeleft, $rout, $wout, $eout);<br>   <br>50     $rin = $win = $ein = '';<br>51     vec($rin, fileno(STDIN), 1) = 1;<br>52     $ein = $rin | $win;<br>53     ($nfound,$timeleft) =<br>54       select($rout=$rin, $wout=$win, $eout=$ein, 0.10);<br>55     return chr(0) if $nfound == 0;<br>56     $rv = sysread(STDIN, $key, 1);<br>57     return chr(0) if (!defined($rv));<br>58     return $key;<br>59   }<br>   <br>60   raw();<br>61   print "press 'x' to exit\n";<br>62 }<br>   <br>63 END {<br>64   cooked() <br>65 }<br><br></pre>
+<p>7-17: The main loop consiste of two sub loops. The first first loop
+(line 9) waits for a new sequence&nbsp; to begin. The second extracts
+all keys of a sequence and prints them on the screen.<br>
+</p>
+<p>26-37: For a program to read characters in a non-blocking mode it
+has to first switch the terminal to raw mode -- echo off,
+non-canonical, time-out set to minimum, and non-blocking mode read for
+STDIN.<br>
+</p>
+<p>45-59: The non-blocking read function uses select() to wait with
+timeout for a character from STDIN. It returns 0 on time out or ascii
+when character is present.<br>
+</p>
+<p>64-65: It politely returns the terminal back to mode which is good
+for command line editing.<br>
+</p>
+
+<hr>last updated: 13-jul-2005 | <a href="index.htm">home page</a> |
+the text of this page is public domain
+</body>
+</html>

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+<title>Access to command line history in BASH</title>
+</head>
+
+<body>
+
+<center>
+<h1>
+Access to command line history in BASH
+</h1>
+</center>
+
+<h2>
+Use Up or Down arrow keys for search
+</h2>
+
+<p>Ever since I migrated from 4DOS/NT shell on Windows to using
+Bash on Unix
+platforms I was missing its command line history access. 4NT provides for
+history navigation by filtering on first few letters of a command line.
+
+<p>This is possible on Bash also.
+
+<p>The key lies in activating <i>history-search-backward</i> and
+<i>history-search-forward</i> which by default are not binded to any keys.
+To verify try:
+
+<p>
+<pre>
+<i>lotzmana@safe$</i> bind -p | grep history-search-forward
+# history-search-forward (not bound)
+</pre>
+
+<p>To activate those two commands, add this to your <i>.bashrc</i> file:
+<pre>
+bind '"\e[A"':history-search-backward
+bind '"\e[B"':history-search-forward
+</pre>
+
+<p>Now you can easily summon any command from the history by typing the command
+and pressing Up arrow. You might continue pressing Up arrow until you find the
+command instance you wish to execute again.
+
+<h2>
+Show all instances of a command
+</h2>
+
+<p>With Up or Down arrow keys you navigate commands one at a time, you are not far
+from the moment when you would definately wish to see all commands that match
+the filter. 4NT's way 
+to do this is to press PgUp or PgDn key which displays a menu with all matching
+lines from the history. In the spirit of Bash I would do this instead
+(checking "cp" for example):
+
+<p>
+<pre>
+<i>lotzmana@safe$</i> history | grep '^ *[0-9]* *cp'
+  336  cp ww_b23/src/dbghelp -R ww_b26/src
+  343  cp ww_b23/src/dbghelp -R ww_b27/src
+  348  cp dbg/ww ~/work/ww/ww_con
+  351  cp dbg/ww ~/work/ww/ww_g
+  355  cp dbg/ww ~/work/ww/ww_g_small
+</pre>
+
+We can automate this as a command line macro binded to a key -- Alt+W. You may
+wish to add this to your <i>.bashrc</i> file:
+
+<pre>
+bind '"\M-w"':"\"\C-k\C-ahistory | grep '^ *[0-9]* *\C-e.'\C-m\""
+</pre>
+
+<p>Let me briefly explain how this works: Imagine that you have already typed
+the command, which is your filter. Then you press Alt+W, this expands to a macro,
+first is Ctrl+K, which deletes everything that is on the right-hand side of the cursor,
+it strips down the command you already typed from any of its parameters potentially
+summoned by Up/Down arrow,
+it is followed by Ctrl+A, this moves the cursor at the first position of the line,
+the text of the grep command is then inserted, Ctrl+E moves the cursor at the end
+of the line, this jumps over the stripped down command, adds '.' and Ctrl+M is
+the equivalent of pressing Enter. The dot is added for the cases when Ctrl+W is
+pressed on an empty line, then it will just show the history unfiltered.
+
+<p>I usually type a command, use Up or Down keys, if I can't reach the
+particular one I'm looking for I quickly press Alt+W.
+
+<h2>
+Picking pieces from previously executed commands
+</h2>
+
+<p>Something that is beyond 4NT, Bash has a history expansion feature -- '!'. The problem with it is that
+people 
+would usually only use simpler '!' combinations and one reason I think is
+because there is no way to easily verify it before execution. Here comes the
+<i>magic-space</i> command. It might be unattached to any key on your
+system. To verify try:
+
+<p>
+<pre>
+<i>lotzmana@safe$</i> bind -p | grep magic-space
+" ": magic-space
+</pre>
+
+<p>It is attached to space on mine machine. Otherwise add this to your <i>.bashrc</i> file:
+
+<p>
+<pre>
+bind Space:magic-space
+</pre>
+
+What does <i>magic-space</i> do: it expands any '!' combinations from the command
+line. Look at this example history:
+
+<p>
+<pre>
+  303  cp ww_b23/src/dbghelp -R ww_b26/src
+  310  cp ww_b23/src/dbghelp -R ww_b27/src
+  315  cp dbg/ww ~/work/ww/ww_con
+  318  cp dbg/ww ~/work/ww/ww_g
+  322  cp dbg/ww ~/work/ww/ww_g_small
+<i>lotzmana@safe$</i> cp !310:1
+</pre>
+
+<p>What is "!310:1"? It means from command line 310, extract word 1, 0 based.
+Still it is somewhat criptic and error prone, many times you would be
+afraid to execute your command. Here <i>magic-space</i> comes to play,
+simply press space! Your line becomes:
+
+<p>
+<pre>
+<i>lotzmana@safe$</i> cp ww_b23/src/dbghelp
+</pre>
+
+<p>
+You may dig and learn more about '!' from Bash man pages.
+
+<h2>
+Store history lines individually
+</h2>
+
+<p>4NT has an option to keep a shared memory region into which to keep the history
+of currently typed commands from all active instances of the shell. I couldn't find
+such feature on Bash. On the other hand shared memory would keep shell instances from overwriting eachothers
+commands into the history file upon exit. With a combination of options
+Bash's history could be configured to
+go to disk one line at a time, thus two instances closed at a different time would not overwrite
+history file contents. Add these two lines to your <i>.bashrc</i>:
+
+<p>
+<pre>
+shopt -s histappend
+export PROMPT_COMMAND='history -a'
+</pre>
+
+<p>First we instruct Bash not to store history by overwriting but to append lines.
+PROMPT_COMMAND is an environment variable which holds list of commands that will
+be executed before Bash begins accepting input for the next command, by calling
+'history -a' we store all commands to disk.
+
+<br>
+<br>
+
+<hr>
+last updated: 27-oct-2004 | <a href="index.htm">home page</a> |
+the text of this page is public domain
+
+</body>
+
+</html>

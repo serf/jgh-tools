@@ -1,0 +1,132 @@
+#!/usr/bin/perl -w
+#
+#
+
+use Digest::MD5 qw(md5_hex);
+use POSIX qw(:termios_h);
+
+my $fd_stdin = fileno(STDIN);
+my $term     = POSIX::Termios->new();
+$term->getattr($fd_stdin);
+my $oterm     = $term->getlflag();
+
+my $echo     = ECHO | ECHOK | ICANON;
+my $noecho   = $oterm & ~$echo;
+
+sub cbreak {
+    $term->setlflag($noecho);  # ok, so i don't want echo either
+    $term->setcc(VTIME, 1);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+
+sub cooked {
+    $term->setlflag($oterm);
+    $term->setcc(VTIME, 0);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+
+sub readkey {
+    my $key = '';
+    cbreak();
+    sysread(STDIN, $key, 1);
+    cooked();
+    return $key;
+}
+
+END { cooked() }
+
+my $dir = ".";
+my %FILES;
+my %INODE;
+my %COUNT;
+my %SUMS;
+
+sub sum_file($) {
+
+    my $file = shift;
+
+    open(FILE, $file) or die "Can't open '$file': $!";
+    binmode(FILE);
+
+    my $md5 = Digest::MD5->new;
+    while (<FILE>) {
+        $md5->add($_);
+    }
+    close(FILE);
+    return $md5->b64digest;
+}
+
+open (FIND, "find . -type f -exec stat -c '%i;%s;%n' {} \\;|") ||
+    die "Can't run find: $!\n";
+while(<FIND>) {
+    chomp();
+    (my $inode, $size, $filename) = split(/;/,$_);
+    $FILES{$size}{$COUNT{$size}++} = $filename;
+    $INODE{$filename} = $inode;
+}
+close(FIND);
+
+opendir(DIR, $dir) || die "Can't open directory '$dir' $!\n";
+@files = grep { /\./i && -f "$dir/$_" } readdir(DIR);
+closedir DIR;
+
+for my $file (sort @files) {
+
+    my $size = (stat($file))[7];
+
+    $file = "./$file";
+
+    if ($COUNT{$size} >= 2) {
+
+        #
+        # Don't sum the same inode twice.
+        #
+        $SUMS{$INODE{$file}} = sum_file($file) unless($SUMS{$INODE{$file}});
+
+        my $sum = $SUMS{$INODE{$file}};
+
+        for my $match (1..$COUNT{$size}) {
+
+            my $match_file = $FILES{$size}{$match-1};
+
+            #
+            # Don't compart with itself.
+            #
+            next if ($INODE{$file} == $INODE{$match_file});
+
+            $SUMS{$INODE{$match_file}} = sum_file($match_file)
+                unless($SUMS{$INODE{$match_file}});
+
+                print "-$sum- $file\n";
+            if ( $SUMS{$INODE{$match_file}} eq "$sum" ) {
+
+                print "$INODE{$file} $SUMS{$INODE{$file}} $file\n",
+                    "$INODE{$match_file} $SUMS{$INODE{$match_file}}",
+                    " $match_file\n";
+
+                $| = 1;
+                print "Remove '$file'? [y|N] ";
+
+                until (defined ($key = readkey())){};
+                chomp($key);
+
+                if ($key =~ /^y$/i) {
+
+                    unlink($file);
+                    print "removed `$file`\n";
+
+                } elsif ($key =~ /^\003$/i) {
+
+                    die "\n";
+
+                } else {
+
+                    print "\n";
+
+                }
+
+            }
+
+        }
+    }
+}

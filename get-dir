@@ -1,0 +1,111 @@
+#!/usr/bin/perl
+#
+# JohnGH
+#
+
+use warnings;
+use strict;
+
+my $search = shift;
+
+my $dirs_file = "$ENV{HOME}/.dirs";
+
+my %dirs;
+
+#
+# Also include any DIR_(NAME) environment variables, although these don't show in get-dir -l
+#
+for my $var ( keys %ENV ) {
+    next unless $var =~ /^DIR_/;
+    (my $alias = $var) =~ s/^DIR_//g;
+    $dirs{lc($alias)} = $ENV{$var};
+}
+
+my $len = 0;
+if ( -r $dirs_file ) {
+    open (DIRS, $dirs_file) || die "Can't read '$dirs_file': $!\n";
+    while (<DIRS>) {
+        chomp;
+        next unless /:/;
+        my ($alias,$dir) = split(/:/, $_);
+        $alias = lc($alias);
+        my $length = length $alias;
+        $len = $length+1 if $length >= $len;
+        $dirs{$alias} = $dir;
+    }
+    close DIRS;
+}
+
+sub by_dir {
+   $dirs{$a} cmp $dirs{$b};
+}
+
+if ( ! $search ) {
+
+    for my $alias ( sort by_dir keys %dirs ) {
+        printf "%${len}s => %s\n", $alias, $dirs{$alias} if $dirs{$alias};
+    }
+
+}
+elsif ( $dirs{$search} ) {
+
+    print "$dirs{$search}\n";
+
+}
+elsif ( $search eq '-l' ) {
+
+    for my $alias ( sort by_dir keys %dirs ) {
+        print " $alias";
+    }
+
+    print $/;
+
+}
+else {
+
+    die "Can't find dir for alias '$search'\n";
+
+}
+
+=in your .bashrc:
+export DIR_VTMP=/var/tmp
+function gd {
+  case "$1" in
+    "" )
+        get-dir
+    ;;
+    "-l" )
+        get-dir -l
+    ;;
+    * )
+        _GO_DIR=$(get-dir $1)
+        if [ -d "$_GO_DIR" ];then
+            cd "$_GO_DIR"
+            printf "cd "
+            pwd
+        fi
+    ;;
+  esac
+}
+
+_gd()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="$(get-dir -l)"
+
+    if [[ ${cur} == * ]] ; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    fi
+}
+complete -F _gd gd
+=cut
+
+=example ~/.dirs
+www:/var/www
+tmp:/tmp
+ulb:/usr/local/bin
+=cut

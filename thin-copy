@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+#
+# thin-copy - 31/12/03
+# http://snippets.dzone.com/posts/show/6950
+#
+
+use warnings;
+use strict;
+
+sub DEBUG {0}
+
+my (%copy_sums, @orig_sums, %orig_count, %orig_files, %uniq_orig);
+my $debug = 0;
+
+open (COPY, "copy") || open (COPY, "copy.md5") || die "Can't read 'copy': $!\n";
+while(<COPY>) {
+        if (/^([a-f\d]{32})\s+(.*)$/) {
+                $copy_sums{$1}++;
+        }
+}
+close(COPY);
+
+open (ORIG, "orig") || die "Can't read 'orig': $!\n";
+while(<ORIG>) {
+        if (/^([a-f\d]{32})\s+(.*)$/) {
+                $orig_files{$1}{++$orig_count{$1}} = $2;
+                push(@orig_sums,$1) unless($uniq_orig{$1}++);
+        }
+}
+close(ORIG);
+
+for my $sum (@orig_sums) {
+
+        DEBUG && printf "$sum\n";
+
+        if ($copy_sums{$sum}) {
+                for my $count (1 .. $orig_count{$sum}) {
+                        my $this_file = $orig_files{$sum}{$count};
+                        if ( -f $this_file ) {
+                                print "rm: $this_file\n";
+                                unlink($this_file);
+                        } else {
+                                print "File not found: $this_file\n";
+                        }
+                }
+        } else {
+                for my $count (1 .. $orig_count{$sum}) {
+                        print "No copy for: $orig_files{$sum}{$count}\n";
+                }
+        }
+}

@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+#
+# ren - rename files interactively
+# John Harrison
+# 14 August 2006 - from shell version
+#
+use warnings;
+use strict;
+
+use File::Glob qw(:globally :nocase);
+use File::Copy;
+
+my $editor = '/bin/vi';
+
+my @files = @ARGV;
+
+die "Usage: $0 FILES\n" unless ($#files >= 0);
+
+print join( $/, @files ), $/;
+
+for my $file (@files) {
+
+    my $tmp = '/tmp/ren.' . $$;
+
+    die "Can't write to '$tmp': $!\n" unless open( TMP, ">$tmp" );
+
+    print TMP "$file";
+
+    close TMP;
+
+    system("$editor $tmp");
+
+    die "Can't read '$tmp': $!\n" unless open( TMP, $tmp );
+
+    chomp( my $new = <TMP> );
+
+    close TMP;
+
+    if ( $new eq $file ) {
+
+        print "'$file': No change.\n";
+
+    }
+    elsif ( -f $new ) {
+
+        print "'$new': Already exists.\n";
+
+    }
+    else {
+
+        die "Can't rename '$file' to '$new': $!\n" unless move( $file, $new );
+
+        print "mv '$file' -> '$new'\n";
+    }
+
+    unlink $tmp;
+
+}
+

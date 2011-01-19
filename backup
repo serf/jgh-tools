@@ -1,0 +1,351 @@
+#!/usr/bin/perl -w
+#
+#  This script was developed by John Harrison (johngh@cpan),
+#  using 'rename' as an example.
+#
+#  This script is free software; you can redistribute it
+#  and/or modify it under the same terms as Perl itself.
+#
+# $Log: backup,v $
+# Revision 1.7  2009/10/26  19:00:00 jgh
+# Added -e and -t options,
+# Removed dependence on Time::localtime
+# Replaced use warnings with -w so it will work with Perl 5.6
+# Added tests to prevent attempts to copy directories.
+# Added warnings if 'move' and 'copy' flags used together.
+# Updated documentation and error messages.
+# Re-ordered first 'my' list.
+#
+# Revision 1.6  2009/09/08  00:00:00 jgh
+# Fixed a bug where a directory with a trailing slash would create
+# an empty file in the directory called directory/.<timestamp>,
+# updated contact details & cleaned up some formatting.
+#
+# Revision 1.5  2006/01/26  02:45:48 jgh
+# Set atime and mtime of target file to be the same as source file.
+#
+# Revision 1.4  2005/02/13  18:12:53  jgh
+# Catch filename already with timestamp, added getopt & podified.
+#
+# Revision 1.3  2004/09/23  14:55:14  jgh
+# First perl version (ported from shell script)
+#
+# Revision 1.2  2002/04/10  00:00:00  jgh
+# Standardise to strings (use variables instead of $(...) in action)
+#
+# Revision 1.1  2002/01/05  19:50:20  jgh
+# Thu Feb 21 19:50:20 GMT 2002
+# Add -mv option (@a-z)
+#
+# Revision 1.0  2001/04/11  17:24:18  jgh
+# Original shell script version for revisioning kickstart work
+# (@fnc apt Brentford)
+
+use strict;
+
+use File::Copy;
+
+use Getopt::Long;
+Getopt::Long::Configure('bundling');
+
+my ($do_cp, $no_ext, $force, $do_mv, $no_act, $tilde, $usage, $verbose);
+
+die "Usage: $0 [-cefmntuv] [filenames]\n"
+    unless GetOptions(
+        'c|cp|copy'    => \$do_cp,
+        'e|ext'        => \$no_ext,
+        'f|force'      => \$force,
+        'm|mv|move'    => \$do_mv,
+        'n|no-act'     => \$no_act,
+        't|tilde'      => \$tilde,
+        'u|help|usage' => \$usage,
+        'v|verbose'    => \$verbose,
+    );
+
+die <<EOT if ($usage);
+Usage: $0 [-cefmntuv] [filenames]
+ -c --cp --copy (default - for safety)
+ -e --ext (remove 
+ -f --force (overwrite existing files)
+ -m --mv --move (most useful) :o)
+ -n --no-act
+ -t --tilde
+ -u --usage (--help) (print this message)
+ -v --verbose
+EOT
+
+$verbose++ if $no_act;
+
+if (!@ARGV) {
+    print "reading filenames from STDIN\n" if $verbose;
+    @ARGV = <STDIN>;
+    chop(@ARGV);
+}
+
+if ( $do_cp ) {
+
+    if ( $do_mv ) {
+
+        warn "$0: 'move' flag overiding 'copy' flag.\n";
+
+    }
+    else {
+
+        warn "$0: Ignoring 'copy' flag (default behavior)\n";
+
+    }
+
+}
+
+FILE: for (@ARGV) {
+
+    my $file = $_;
+
+    die "$0: File `$file' does not exist.\n" unless(-e "$file");
+
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+
+    #
+    # C's tm structure from time.h;
+    # namely with sec, min, hour, mday, mon, year, wday, yday, and isdst..
+    #
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+        localtime($mtime);
+
+    my $time = sprintf "%4i%02i%02i%02i%02i%02i",
+        1900 + $year, 1 + $mon, $mday, $hour, $min, $sec;
+
+    my ($new_name, $new_ext);
+
+    die $@ if $@;
+
+    #
+    # Remove trailing slashes in case file is (directory)/
+    # (like bash gives with tab completion). That caused a bug.
+    #
+    $file =~ s{/+$}{}g;
+
+    if ( $file =~ /$time/ ) {
+
+        print "`$file' matches [$time]\n";
+        next;
+
+    }
+    elsif ( $no_ext ) {
+
+        $new_ext = "";
+        $new_name = $file;
+
+    }
+    elsif ( $file =~ /\.tar\.gz$/ ) {
+
+        ($new_name = $file) =~ s/\.tar\.gz$//g;
+        $new_ext = ".tar.gz";
+
+    }
+    elsif ( $file =~ /.*\.([^\.]+)$/ ) {
+
+        $new_ext = ".$1";
+        ($new_name = $file) =~ s/$new_ext$//g;
+
+    }
+    else {
+
+        $new_ext = "";
+        $new_name = $file;
+
+    }
+
+    if ( $tilde ) {
+
+        $new_name =~ s/~$//g;
+
+    }
+
+    my $target = "$new_name.$time$new_ext";
+
+    if ( -e $target and !$force ) {
+
+        warn  "$0: `$file' not renamed: `$target' already exists\n";
+
+    }
+    elsif ( $no_act ) {
+
+        if ( $do_mv ) {
+
+            print "`$file' -> `$target'\n" if $verbose;
+
+        }
+        elsif ( -d $file ) {
+
+            warn "$0: Directory `$file' not renamed: do manual 'cp -rp $file $target'\n"
+                if $verbose;
+            next FILE;
+
+        }
+        else {
+
+            print "`$file' -> `$file' + `$target'\n" if $verbose;
+
+        }
+
+    }
+    else {
+
+        if ( $do_mv and move("$file", "$target") ) {
+
+            print "`$file' -> `$target'\n" if $verbose;
+
+        }
+        elsif ( -d $file ) {
+
+            warn "$0: Directory `$file' not renamed: do manual 'cp -rp $file $target'\n"
+                if $verbose;
+            next FILE;
+
+        }
+        elsif ( copy("$file", "$target") ) {
+
+            my $atime=(stat($file))[8];
+
+            if ( utime($atime,$mtime,$target) ) {
+
+                print "`$file' -> `$file' + `$target'\n" if $verbose;
+
+            }
+            else {
+
+                die "$0: Can't set atime & mtime of '$target': $!\n";
+
+            }
+
+        }
+        else {
+
+            warn  "Can't backup `$file' to `$target': $!\n";
+
+        }
+
+    }
+
+}
+
+__END__
+
+=head1 NAME
+
+backup - renames multiple files to have their timestamp in the filename
+
+=head1 SYNOPSIS
+
+B<backup> S<[ B<-c> ]> S<[ B<-e> ]> S<[ B<-f> ]> S<[ B<-m> ]> S<[ B<-n> ]> S<[ B<-t> ]> S<[ B<-u> ]> S<[ B<-v> ]> S<[ I<files> ]>
+
+=head1 DESCRIPTION
+
+C<backup>
+backs up the filenames supplied to copies which include the
+original file's timestamp in their name.
+
+e.g.
+
+    backup FILE
+
+would create FILE.<timestamp>
+
+If no filenames are given on the command line, filenames
+will be read via standard input (as 'rename' command does).
+
+If the argument --move (or one of its forms) is given the
+file will be renamed (the default is to create a copy).
+
+    backup --mv FILE
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-c>, B<--cp>, B<--copy>
+
+Copy: (default action so ignored)
+This is the default because it may be safer to copy a file than rename
+it if it is in use (e.g. a log file) but it will use more disk space!
+
+=item B<-e>, B<--ext>
+
+Extension: Make the timestamp the extension instead of moving it
+inside the existing one.
+
+=item B<-f>, B<--force>
+
+Force: overwrite existing files.
+
+=item B<-m>, B<--mv>, B<--move>
+
+Move: move the file instead of copying it.
+
+=item B<-n>, B<--no-act>
+
+No Action: show what files would have been backed up.
+
+=item B<-t>, B<--tilde>
+
+Tilde: Remove trailing '~' from filename before adding timestamp.
+
+=item B<-u>, B<--usage>, B<--help>
+
+Usage: show usage
+
+=item B<-v>, B<--verbose>
+
+Verbose: print names of files successfully backed up.
+
+=back
+
+=head1 VERSION
+
+This documentation was last updated at Revision 1.7
+
+=head1 ENVIRONMENT
+
+No environment variables are used.
+
+=head1 AUTHOR
+
+John G. Harrison L<http://www.aotea.org/john/>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2005, 2009 John G. Harrison, all rights reserved.
+
+This is free software; you can redistribute it
+and/or modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+mv(1), perl(1), rename(1)
+
+=head1 DIAGNOSTICS
+
+If the new filename already exists or the file already has the
+timestamp in its name you'll get an error.
+
+=head1 TODO
+
+Perhaps timestamp formatting could be specified on the command line (ala date).
+
+The shell script version has two options, --mvtn and --cptn
+
+=head1 BUGS
+
+The --copy option doesn't work on directories
+because File::Copy doesn't support cp -r
+
+=head1 FEEDBACK
+
+If you find any bugs or have suggestions...
+please direct them to the serf at the monstery ( perlmonks.org )
+who may be glad to hear from you...
+You will find him here: http://www.perlmonks.org/?node_id=96858
+
+=cut

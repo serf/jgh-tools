@@ -1,1 +1,92 @@
 These are tools I use to make life easier working on Linux & Unix machines.
+
+backup - 
+    backs up the filenames supplied to copies which include the
+    original file's timestamp in their name.
+    
+    http://snippets.dzone.com/posts/show/8251
+
+get-dir
+    get-dir / gd - a simple way of jumping around dirs you use all the time
+
+    Put this in your path as get-dir
+    add the section at the bottom to your .bashrc
+    and call it with:
+
+        $ gd
+
+    or:
+
+        $ gd [DIR_TAG]
+
+    It's nice to have this with it too:
+
+    http://www.geocities.com/h2428/petar/bash_acd.htm
+
+    http://snippets.dzone.com/posts/show/9863
+
+magic
+    
+    http://snippets.dzone.com/posts/show/10151
+
+new
+    skeleton code for new Perl program
+
+    Template for a new Perl program - outputs commonly used skeleton code to save typing it again.
+
+    Usage:
+    new [-h] [-d] [-f] [-n]
+    where:
+      -h - skip header (hash bang, warnings & strictness pragmas)
+      -d - code for reading a directory (from perldoc -f readdir)
+      -f - code for reading a file.
+      -n - Perl 5.6 or newer lexical filehandles (defaults to old Perl TYPEGLOB)
+
+    This saves you retyping it, making a typo, and makes sure you've not forgotten anything. 
+    http://snippets.dzone.com/posts/show/9151
+
+ren
+    rename files interactively
+    You may change the path to your editor...
+    Mine's usually /usr/bin/vim - but /bin/vi is often symlinked to that if it's installed...
+    http://snippets.dzone.com/posts/show/7955
+
+ssh-agent
+    Re-use existing ssh-agent
+    If you have an ssh-agent running, work out its variables & set it as your environment.
+    If you don't have one running, start a new one. Add a key if there isn't one loaded.
+    from:
+    http://snippets.dzone.com/posts/show/10897
+    http://snippets.dzone.com/posts/show/8187
+    ...and some tweaking
+
+thin-copy
+    Remove files that have been successfully copied to another location.
+    I use it something like this:
+        $ cp -rp orig_dir copy_dir
+        $ cd orig_dir
+        $ find * -type f -exec md5sum {} \; > orig
+        $ cd ../copy_dir
+        $ find * -type f -exec md5sum {} \;  > ../orig_dir/copy
+        $ cd ../orig_dir
+        $ thin-copy
+    http://snippets.dzone.com/posts/show/6950
+
+thin-dir
+    remove files from another directory
+    Run with:
+        thin-dir (path_to_other_directory)
+    It will prompt you to remove any files in this directory that are a copy of a file in the other directory.
+    (i.e. have the same name and md5sum)
+    http://snippets.dzone.com/posts/show/7869
+
+thin-down
+    remove files
+    Removes duplicate files from subdirectories.
+    http://snippets.dzone.com/posts/show/7871
+
+thin-dup
+    remove duplicate files
+    This compares the md5sum of files and prompts to remove copies of files that are duplicated.
+    http://snippets.dzone.com/posts/show/7868
+

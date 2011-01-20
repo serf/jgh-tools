@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+# Dot this script, don't just run it as a script
+# (which would run it in its own sub-shell)
+# because you need the variables to be set in the context of your current shell.
+# Put this file in ~/.ssh/ssh-agent and add this to your .bash-aliases:
+# alias ssh_agent='. ~/.ssh/ssh-agent'
+#
+
+if [ -x /usr/bin/ssh-agent ]
+then
+    SSH_AGENT=/usr/bin/ssh-agent
+    SSH_ADD=/usr/bin/ssh-add
+else
+    echo "Can't find ssh-agent"
+    SSH_AGENT=/bin/false
+    SSH_ADD=/bin/false
+fi
+
+ps -fu$LOGNAME|grep "ssh-agent$" > /dev/null
+if [ $? != 0 ]
+then
+    eval $($SSH_AGENT)
+fi
+
+for SSH_AUTH_SOCK in $(find /tmp/ssh-???*[0-9]* -type s -user ${LOGNAME} -name "agent.[0-9]*" 2>/dev/null)
+do
+
+    GOT_AGENT=1
+
+    SOCK_PID=${SSH_AUTH_SOCK##*.}
+    SSH_AGENT_PID=$(ps -fu${LOGNAME}|awk '/ssh-agent/ && ( $2=='${SOCK_PID}' || $3=='${SOCK_PID}' || $2=='${SOCK_PID}' +1 ) {print $2}')
+
+    $SSH_ADD -l > /dev/null 2>&1
+    if [ $? = 0 ]
+    then
+        #
+        # 2048 af:b2:7a:6e:a3:df:18:78:ad:25:07:9b:c4:ff:01:58 /u/harrij/.ssh/id_rsa (RSA)
+        #
+        echo "Using agent ${SSH_AGENT_PID}"
+        break
+    elif [ $? = 1 ]
+    then
+        #
+        # The agent has no identities.
+        #
+        echo "Agent ${SSH_AGENT_PID} has no keys..."
+        $SSH_ADD
+        break
+    elif [ $? = 2 ]
+    then
+        #
+        # Could not open a connection to your authentication agent.
+        #
+        echo "How did we get a socket & no agent?"
+        eval $($SSH_AGENT)
+        $SSH_ADD
+        break
+    fi
+
+    echo "Skipping pid ${SSH_AGENT_PID}"
+    GOT_AGENT=0
+
+done
+
+export SSH_AGENT_PID;
+export SSH_AUTH_SOCK;
+

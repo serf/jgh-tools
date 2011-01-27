@@ -10,7 +10,7 @@ use strict;
 use File::Glob qw(:globally :nocase);
 use File::Copy;
 
-my $editor = '/bin/vi';
+my $editor = '/usr/bin/vi';
 
 my @files = @ARGV;
 

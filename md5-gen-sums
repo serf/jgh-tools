@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# /home/john/bin/md5-gen-sums
+# 9 Feb 2005 John Harrison
+# Generate sums file for thin-copy
+#
+
+case $1 in
+"-o" )
+	shift
+	find $@ -type f -exec md5sum {} \; > orig
+	;;
+"-c" )
+	shift
+	find $@ -type f -exec md5sum {} \; > copy
+	;;
+	*)
+	find $@ -type f -exec md5sum {} \;
+	;;
+esac
+

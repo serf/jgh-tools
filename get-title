@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+#
+#
+#
+use strict;
+use warnings;
+
+use HTML::TokeParser;
+use LWP::Simple;
+
+my $url = shift;
+die "Usage: $0 URL\n" unless $url;
+
+my $content = get($url);
+my $p = HTML::TokeParser->new(\$content);
+
+my $title;
+if ($p->get_tag('title')) {
+    $title = $p->get_trimmed_text();
+}
+print $title, $/;
+

@@ -7,6 +7,9 @@
 #  and/or modify it under the same terms as Perl itself.
 #
 # $Log: backup,v $
+# Revision 1.8  2011/02/01  19:30:00 jgh
+# Added code to cope with ./file and ../file
+#
 # Revision 1.7  2009/10/26  19:00:00 jgh
 # Added -e and -t options,
 # Removed dependence on Time::localtime
@@ -142,6 +145,18 @@ FILE: for (@ARGV) {
 
         ($new_name = $file) =~ s/\.tar\.gz$//g;
         $new_ext = ".tar.gz";
+
+    }
+    elsif ( $file =~ m|^\./| ) {
+
+        $new_ext = "";
+        $new_name = $file;
+
+    }
+    elsif ( $file =~ m|^\.\./| ) {
+
+        $new_ext = "";
+        $new_name = $file;
 
     }
     elsif ( $file =~ /.*\.([^\.]+)$/ ) {

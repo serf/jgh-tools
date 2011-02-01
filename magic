@@ -1,58 +1,78 @@
 #!/usr/bin/perl -w
 #
 use strict;
+
 my %byte;
 my $lines = 10;
 my $blank = " _";
+
 die "Usage: $0 FILE1 FILE2 [.. FILEn]\n" if ($#ARGV < 1);
+
 my @files = @ARGV;
+
 for my $file (@files) {
-    open (FILE, $file) || die "Can't read file '$file': $!\n";
-    for my $line ( 1 .. $lines ) {
-        read FILE,$_,16 or last;
-        my @bytes = unpack "H2"x16, $_;
-        for my $byte (0 .. 15) {
-            $byte{$file}{$line}{$byte} = $bytes[$byte];
-        }
-    }
-    close(FILE);
+
+	open (FILE, $file) || die "Can't read file '$file': $!\n";
+
+	for my $line ( 1 .. $lines ) {
+		read FILE,$_,16 or last;
+		my @bytes = unpack "H2"x16, $_;
+		for my $byte (0 .. 15) {
+			$byte{$file}{$line}{$byte} = $bytes[$byte];
+		}
+	}
+
+	close(FILE);
+
 }
+
 my $orig = shift(@files);
+
 for my $line ( 1 .. $lines ) {
-    for my $byte (0 .. 15) {
-        #
-        # Block out blank bytes in orig file.
-        #
-        $byte{$orig}{$line}{$byte} = "$blank"
-            unless($byte{$orig}{$line}{$byte});
-        #
-        # Is it screwy logic to put it inside the counter loop ?
-        # I want to block out a short original file without looping again.
-        #
-        for my $file ( @files ) {
-            $byte{$file}{$line}{$byte} = "$blank"
-                unless($byte{$file}{$line}{$byte});
-            if ( $byte{$orig}{$line}{$byte} !~ /$byte{$file}{$line}{$byte}/ ) {
-                $byte{$orig}{$line}{$byte} = "$blank";
-            }
-        }
-    }
+
+	for my $byte (0 .. 15) {
+
+		#
+		# Block out blank bytes in orig file.
+		#
+		$byte{$orig}{$line}{$byte} = "$blank"
+			unless($byte{$orig}{$line}{$byte});
+
+		#
+		# Is it screwy logic to put it inside the counter loop ?
+		# I want to block out a short original file without looping again.
+		#
+		for my $file ( @files ) {
+
+			$byte{$file}{$line}{$byte} = "$blank"
+				unless($byte{$file}{$line}{$byte});
+
+			if ( $byte{$orig}{$line}{$byte} !~ /$byte{$file}{$line}{$byte}/ ) {
+				$byte{$orig}{$line}{$byte} = "$blank";
+			}
+
+		}
+
+	}
+
 }
+
 #
 # I don't know why, but the program actually runs twice as fast in
 # its own loop as it does if you include it in the previous loop!
 #
 for my $line ( 1 .. $lines ) {
-    printf "%04s: ", ($line * 16) - 16;
-    my @chars;
-    for my $byte (0 .. 15) {
-        my $char = $byte{$orig}{$line}{$byte};
-        printf "%-2s ",$char;
-        if ($char !~ /$blank/) {
-            ($chars[$byte] = pack("H2", $char)) =~ s/[[:^print:]]/./g;
-        } else {
-            $chars[$byte] = " ";
-        }
-    }
-    print " ", join("", @chars), $/;
+	printf "%04s: ", ($line * 16) - 16;
+	my @chars;
+	for my $byte (0 .. 15) {
+		my $char = $byte{$orig}{$line}{$byte};
+		printf "%-2s ",$char;
+		if ($char !~ /$blank/) {
+			($chars[$byte] = pack("H2", $char)) =~ s/[[:^print:]]/./g;
+		} else {
+			$chars[$byte] = " ";
+		}
+	}
+	print " ", join("", @chars), $/;
 }
+

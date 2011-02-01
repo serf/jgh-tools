@@ -1,0 +1,14 @@
+#!/usr/bin/perl -w
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# VER DATE  AUTH NOTES
+# 1.0 990520 JGH To replace the HP-UX command
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+while (<>) {
+    chop;
+    s/$/\r\n/g;
+    print "$_";
+}
+print "\032";
+
+1;

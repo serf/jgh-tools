@@ -1,0 +1,14 @@
+#!/usr/bin/perl
+#
+# un-hex
+#   convert a hexadecimal encoded url (i.e. with % signs) to ASCII
+# By John
+#
+use warnings;
+use strict;
+
+while (defined (my $line = <>)) {
+    chomp $line;
+    $line =~ s/[%=]([A-F0-9]{2})/pack("C", hex($1))/egi;
+    print "$line\n";
+}

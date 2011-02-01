@@ -1,0 +1,250 @@
+#!/usr/bin/perl -w
+#
+# html - lazy tool for spitting out HTML header and footer to save some
+#        typing... I used to use index
+#        - but that's a waste as it's not what I'm actually after...
+#
+
+use strict;
+
+use Getopt::Long;
+Getopt::Long::Configure('bundling');
+
+my (
+
+    $head_only,
+    $tail_only,
+
+    $html_4,
+    $php,
+
+    $css_name,
+    $css_inline,
+
+    $colour_grey,
+    $reverse_video,
+
+    $tags,
+
+    $do_usage,
+
+    $verbose,
+
+);
+
+sub show_usage {
+
+die <<EOT;
+Usage: $0 [-h[4]|-t|-u] [-l] [-r|-c|-g] [-i] [-[l|s] sheetname] [TITLE]
+    -u usage (print this message)
+EOT
+
+}
+
+my $link_only = '_';
+
+show_usage unless GetOptions (
+
+    'h'         => \$head_only,
+    't'         => \$tail_only,
+    'l:s'       => \$link_only,
+
+    '4'         => \$html_4,        # Defaults to xhtml 1.1 Strict
+    'p'         => \$php,
+
+    'r'         => \$reverse_video, # Speccy terminology :o)
+    'g'         => \$colour_grey,
+
+    'i'         => \$css_inline,
+    's=s'       => \$css_name,
+
+    'u'         => \$do_usage,
+    'v'         => \$verbose,
+
+);
+
+show_usage if ($do_usage);
+
+#
+# Normal black on white.
+#
+my $bg_color = "#ffffff";
+my $text = "#000000";
+
+my $do_head = 1;
+my $do_tail = 1;
+my $do_link = 1;
+
+if ( $link_only eq "_" ) {
+
+    #
+    # No link
+    #
+    $do_link = 0;
+
+} elsif ( $link_only ) {
+
+    $css_name = $link_only;
+    $do_head = 0;
+    $do_tail = 0;
+
+} else {
+
+    #
+    # -l was given with no option - use default.
+    #
+    $css_name = "style";
+
+}
+
+if ( $head_only ) {
+
+    $do_tail = 0;
+    $do_link = 0;
+
+}
+
+if ( $tail_only ) {
+
+    $do_head = 0;
+    $do_link = 0;
+
+}
+
+if ( $reverse_video ) {
+
+    $bg_color = "#000000";
+    $text = "#ffffff";
+
+} elsif ( $colour_grey ) {
+
+    $bg_color = "#c0c0c0";
+    $text = "#000000";
+
+}
+
+my $title = join(" ", @ARGV);
+$title = "" unless($title);
+
+if ( $do_head ) {
+
+    if ( $php ) {
+
+        print STDERR "Doing php head...\n" if ($verbose);
+
+print <<EOT;
+<?
+  print '<?xml version="1.0" encoding="iso-8859-1"?>';
+?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+  <head>
+    <title>${title}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+EOT
+
+    } elsif ( $html_4 ) {
+
+        print STDERR "Doing html4 head...\n" if ($verbose);
+
+print <<EOT;
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>${title}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+EOT
+
+    } else {
+
+        #
+        # Default to XHTML 1.1 Strict
+        #
+        print STDERR "Doing xhtml head...\n" if ($verbose);
+
+print <<EOT;
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+  <head>
+    <title>${title}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+EOT
+
+    }
+
+}
+
+if ( $do_link ) {
+
+    die "$0: link option requires a sheet name\n" unless($css_name);
+
+    print "    " if ( $do_head );
+
+    if ( $html_4 ) {
+
+        print qq~<link rel="stylesheet" title="$css_name" href="$css_name.css" type="text/css">\n~;
+
+    } else {
+
+        print qq~<link rel="stylesheet" title="$css_name" href="$css_name.css" type="text/css" />\n~;
+
+    }
+
+}
+
+if ( $css_inline ) {
+
+print <<EOT;
+    <style type="text/css">
+      /*<![CDATA[*/
+      body      {
+        color:          ${text};
+        background:     ${bg_color};
+        font-family:    Verdana, Helvetica, Myriad Web, Syntax, Sans-Serif;
+      }
+      a         {
+        color:            #0000ff;
+        background-color: ${bg_color};
+      }
+      a:link    {
+        color:            #0000ff;
+        background-color: ${bg_color};
+      }
+      a:hover   {
+        color:            #ff0000;
+        background-color: ${bg_color};
+      }
+      a:active  {
+        color:            #ff0000;
+        background-color: #c0c0c0;
+      }
+      a:visited {    
+        color:            #800080;
+        background-color: ${bg_color};
+      }
+    /*]]>*/
+    </style>
+EOT
+
+}
+
+if ( $do_head ) {
+
+    print "  </head>\n  <body>\n\n";
+
+    print "<!-- body of document goes here -->\n" if ( $tags );
+
+}
+
+if ( $do_tail ) {
+
+    print "<!-- generated with 'xhtml' script -->\n" if ( $tags );
+
+    print "  </body>\n</html>\n";
+
+}
+

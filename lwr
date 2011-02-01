@@ -1,0 +1,57 @@
+#!/usr/bin/perl -w
+#
+# lwr - lower text inside known html tags.
+# John Harrison
+#
+# Feb  2 2004 - orignal version (open to correction)
+# Feb 23 2005 - replace raw non-ascii with \240
+#
+use strict;
+
+my @lowered;
+
+while (<>) {
+
+	chomp();
+
+	for my $tag qw(
+		a area b blockquote body br center dd dir div dl dt em form
+		h1 h2 h3 h4 head hr html i img input li link map meta
+		ol option p pre script select span strong style sup table
+		tbody td title tr tt u ul xmp
+	) {
+		s|<\s*$tag\b|<$tag|ig; s|<\s*/$tag\b|</$tag|ig;
+	}
+
+	for my $value qw(
+		action align alink alt background bgcolor border cellpadding
+		cellspacing color colspan content face height href language
+		lang link maxlength method name onclick option rel rowspan
+		size src target text type valign value vlink width
+	) {
+		s|\b$value[\s]*=["'\s]*([^"'>]*)["'\b]|$value="$1" |img;
+	}
+
+	for my $bad qw(
+		nobr
+	) {
+		#
+		# He who beareth ill gifts, shall take nothing in return...
+		#
+		if (m|<[/]*$bad>|im) {
+			print "Proprietory tag '$bad' on line $.\n";
+			exit 0;
+		}
+	}
+
+	s|\t|    |ig;
+	s|\240| |g;
+
+	s/=["']*(#[0-9A-F]{6})["']*/\L="$1"/ig; # lower colour tags
+
+	push (@lowered, $_);
+
+}
+
+print join($/,@lowered), $/;
+

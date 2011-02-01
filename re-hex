@@ -1,0 +1,14 @@
+#!/usr/bin/perl -w
+#
+# re-hex - hexadecimal encode an ASCII url (i.e. with % signs)
+# By John
+#
+
+while (<>){
+	chomp();
+	for $char (split(//,$_)) {
+		printf "%%%s", unpack("H*",$char);
+	}
+	print "\n";
+}
+

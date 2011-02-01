@@ -75,7 +75,11 @@ my $do_head = 1;
 my $do_tail = 1;
 my $do_link = 1;
 
-if ( $link_only eq "_" ) {
+if ( $css_name ) {
+
+    $do_head = 1;
+
+} elsif ( $link_only eq "_" ) {
 
     #
     # No link

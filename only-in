@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+#
+# only-in
+# find lines which are in the first file, but not in the second.
+#
+use warnings;
+use strict;
+
+my ($input_file, $exclude_file) = (shift, shift);
+
+die "Usage: $0 INPUT EXCLUDE\n" if ! $exclude_file;
+
+my %exclude;
+
+open (my $exclude_fh, $exclude_file ) ||
+    die "Can't read exclude file '$exclude_file': $!\n";
+while (defined(my $exclude = <$exclude_fh>)) {
+    $exclude{$exclude} = 1;
+}
+close $exclude_fh;
+
+open (my $input_fh, $input_file) ||
+    die "Can't read input file '$input_file': $!\n";
+while (defined(my $input = <$input_fh>)) {
+    print $input if ! $exclude{$input};
+}
+close $input_fh;
+

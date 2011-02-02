@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+#
+# This is an example showing how you can
+# extract links from a document received using LWP:
+#
+
+use strict;
+use warnings;
+
+use LWP::UserAgent;
+use HTML::LinkExtor;
+use URI::URL;
+
+my $url = shift;
+die "Usage: $0 URL\n" unless $url;
+
+my $ua = LWP::UserAgent->new;
+
+# Set up a callback that collect image links
+my @imgs = ();
+sub callback {
+    my ($tag, %attr) = @_;
+    return if $tag ne 'img';  # we only look closer at <img ...>
+    push(@imgs, values %attr);
+}
+
+# Make the parser.  Unfortunately, we don't know the base yet
+# (it might be diffent from $url)
+my $p = HTML::LinkExtor->new(\&callback);
+
+# Request document and parse it as it arrives
+my $res = $ua->request(HTTP::Request->new(GET => $url),
+    sub {$p->parse($_[0])});
+
+# Expand all image URLs to absolute ones
+my $base = $res->base;
+@imgs = map { $_ = url($_, $base)->abs; } @imgs;
+
+# Print them out
+print join($/, @imgs), $/;
+

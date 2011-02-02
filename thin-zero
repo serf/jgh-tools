@@ -1,0 +1,57 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Getopt::Std;
+use Term::ReadKey;
+
+$| = 1;
+my %opts;
+my $dir = ".";
+my $rm_flag = 0;
+my $my_name = $0;
+$my_name =~ s|^.*/||g;
+
+getopts('y', \%opts);  # get any command line arguments
+
+$rm_flag = $opts{'y'} if($opts{'y'});
+
+opendir(DIR, $dir) || die "Can't open dir '$dir': $!\n";
+my @entries = readdir(DIR);
+closedir(DIR);
+
+for my $file_name (@entries) {
+
+	if ( (stat($file_name))[7] == 0 ) {
+
+	    my $confirm;
+
+		if (! $rm_flag) {
+
+	    	print "$my_name: remove regular empty file `$file_name'? [yn] ";
+
+			ReadMode 4; # Turn off controls keys
+			until (defined ($confirm = ReadKey(1)) && $confirm =~ /^[ynq]/i){};
+			ReadMode 0; # Reset tty mode before exiting
+			die $/ if ($confirm =~ /q/);
+
+		} else {
+
+			$confirm = "y";
+
+		}
+
+		if (lc($confirm) eq "y") {
+
+			unlink($file_name) || die "Can't unlink `$file_name': $!\n";
+			print "removed `$file_name'\n";
+
+		} else {
+
+			print $/;
+
+		}
+
+	}
+
+}
+

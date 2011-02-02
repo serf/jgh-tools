@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+# IP address to HEX address converter
+# usage: ip2hex [ip]
+# ip2hex 158.23.45.10
+# outputs 9E172D0A
+# version 1.1
+# from http://perlmonks.org/?node_id=11876
+# 
+use warnings;
+use strict;
+use Getopt::Std;
+
+our ($opt_h);
+getopts("h");
+
+die "Usage: $0 [ip]\n" if $opt_h;
+
+my $ip = shift;
+
+if (! $ip) {
+    print "Enter IP addr: ";
+    chomp($ip = <STDIN>);
+}
+
+print "IP $ip is HEX ";
+printf "\U%02x", $_ for split /\./, $ip;
+print $/;
+

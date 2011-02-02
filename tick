@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use Getopt::Std;
+
+my %opts;
+getopts('wmcv', \%opts);
+
+print "\e[H\e[J\n"; # Clear screen
+
+my $sleep = 1;
+my $msg;
+
+if ( $opts{w} ) {
+    $msg = ' Web keepalive 8080';
+} elsif ( $opts{m} ) {
+    $msg = ' ->Machine keepalive 7070';
+} elsif ( $opts{c} ) {
+    $msg = ' ->Computer keepalive 6060';
+} elsif ( $opts{j} ) {
+    $msg = ' ->Host keepalive 5050';
+} elsif ( @ARGV ) {
+    $msg .= " " . join ' ', @ARGV;
+} else {
+    $msg = "";
+}
+
+while ( $sleep ) {
+
+    for my $hand qw( / - \ | ) {
+
+        sleep($sleep);
+
+        print "\e[1;1H$hand$msg\n"; # Print hand in top left corner.
+
+    }
+
+}
+

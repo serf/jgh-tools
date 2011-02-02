@@ -1,0 +1,8 @@
+#!/bin/sh
+
+MATCH_STRING=$1
+REPLACE_WITH=$2
+EDIT_FILE=$3
+
+perl -pi.$$ -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
+

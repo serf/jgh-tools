@@ -1,0 +1,108 @@
+#!/usr/bin/perl -w
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#
+#  Program: lower
+#  Version: 3.4
+#  Purpose:
+#   If called with a command line argument of a filename it will rename
+#   that file to the all-lower-case version of the filename.
+#   If called with no arguments it will lower all characters given on stdin.
+#  Author : John Harrison
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+use strict;
+use locale;
+use File::Copy;
+
+my ($old_name, $new_name);
+
+sub do_rename ($$) {
+
+	$old_name = shift;
+	$new_name = shift;
+
+	#
+	# "Rename $old_name to $new_name"
+	#
+
+	if ( -f $new_name ) {
+
+		print STDERR "$new_name already exists, not overwriting.\n";
+
+	} else {
+
+		move("$old_name","$new_name");
+		print STDOUT "`$old_name' -> `$new_name'\n";
+
+	}
+
+}
+
+sub no_such_file {
+
+	$old_name = shift;
+	print STDERR "$0: cannot stat `$old_name': No such file or directory\n";
+
+}
+
+if ( $#ARGV >= 0 ) {
+
+	if ( $ARGV[0] =~ /-ext/ ) {
+
+		#
+		# Do extension only
+		# i.e. preserve multi-case filenames
+		# so: FileName.EXT -> FileName.ext
+		#
+		shift;
+
+		foreach $old_name (@ARGV) {
+
+			if ( ! -f $old_name ) {
+				no_such_file($old_name);
+			}
+
+			if ( $old_name =~ /^(.*)\.([^\.]*)$/ ) {
+
+				my $file_name = $1;
+				my $extension = $2;
+				my $new_name = $file_name . "." . lc($extension);
+				do_rename($old_name,$new_name);
+
+			} else {
+
+				die "$0: No extension found in filename.\n";
+
+			}
+
+		}
+
+		exit;
+
+	} else {
+
+		#
+		# Whole filename.
+		#
+		foreach my $old_name (grep( -f $_, @ARGV)) {
+
+			my $new_name = lc($old_name);
+			do_rename($old_name,$new_name);
+
+		}
+		exit;
+
+	}
+
+} else {
+
+	while (<>) {
+		chomp();
+		print lc("$_\n");
+	}
+
+}
+
+exit;
+

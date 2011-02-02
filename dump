@@ -1,0 +1,4 @@
+#!/bin/bash
+
+/usr/bin/elinks -dump -no-numbering -no-references $@
+

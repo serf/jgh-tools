@@ -1,0 +1,14 @@
+#!/usr/bin/perl
+#
+#
+use warnings;
+use strict;
+
+while (<>) {
+    s/^\777\776//;
+    s/(.)\000/$1/g;
+    s/^\000//g;
+    s/\000$//g;
+    print;
+}
+

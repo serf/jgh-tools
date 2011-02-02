@@ -1,0 +1,56 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+#   16777216 = 1.0.0.0         = 256 x 256 x 256
+# 4294967295 = 255.255.255.255 = (256 x 256 x 256 x 256) - 1
+
+my $my_name = $0 ;
+$my_name =~ s/.*\///g ;
+
+die "Usage: $my_name [Decimal IP Address]\n" if ($#ARGV != 0);
+
+my $decimal = $ARGV[0];
+
+if ( $decimal =~ /\D/ ) {
+    print STDERR "$decimal is not a valid decimal IP address\n";
+    exit 1;
+}
+
+if ( $decimal > 4294967295 ) {
+    print STDERR "$decimal > 4294967295 thus not a valid decimal IP address\n";
+    exit 1;
+}
+
+sub get_octet {
+    return (split(/\./,shift))[0];
+}
+
+my (@oct,@abs);
+
+if ( $decimal > 1677 ) { # x / 16777216 craps out where x < 1678
+
+    $oct[0] = get_octet( $decimal / 16777216 ) ;
+    $abs[0] = $oct[0] * 16777216 ;
+
+    $oct[1] = get_octet ( ($decimal - $abs[0]) / 65536 ) ;
+    $abs[1] = $oct[1] * 65536 ;
+
+} else {
+
+    $oct[0] = 0 ;
+    $oct[1] = 0 ;
+    $abs[0] = 0 ;
+    $abs[1] = 0 ;
+
+}
+
+$oct[2] = get_octet (($decimal - ($abs[0] + $abs[1])) / 256) ;
+$abs[2] = $oct[2] * 256 ;
+
+$oct[3] = $decimal - ($abs[0] + $abs[1] + $abs[2]) ;
+
+print join(".", @oct) . "\n";
+
+exit;
+

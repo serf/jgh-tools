@@ -38,11 +38,11 @@ cd_func ()
 
   #
   # Trim down everything beyond 11th entry
-  popd -n +11 2>/dev/null 1>/dev/null
+  popd -n +21 2>/dev/null 1>/dev/null
 
   #
   # Remove any other occurence of this dir, skipping the top of the stack
-  for ((cnt=1; cnt <= 10; cnt++)); do
+  for ((cnt=1; cnt <= 20; cnt++)); do
     x2=$(dirs +${cnt} 2>/dev/null)
     [[ $? -ne 0 ]] && return 0
     [[ ${x2:0:1} == '~' ]] && x2="${HOME}${x2:1}"

@@ -37,13 +37,27 @@ print <<'EOT';
 #
 #
 my $some_dir = '/some/dir';
+EOT
+
+    if ( $n ) {
+
+print <<'EOT';
 opendir(my $dir_fh, $some_dir) || die "Can't opendir '$some_dir': $!\n";
 my @files = grep { /^./ && -f "$some_dir/$_" } readdir($dir_fh);
 closedir $dir_fh;
-
 EOT
 
-$indent = 4;
+    } else {
+
+print <<'EOT';
+opendir(DIR_FH, $some_dir) || die "Can't opendir '$some_dir': $!\n";
+my @files = grep { /^./ && -f "$some_dir/$_" } readdir(DIR_FH);
+closedir DIR_FH;
+EOT
+
+    }
+
+    $indent = 4;
 
 }
 

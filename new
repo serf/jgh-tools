@@ -7,37 +7,21 @@ my $indent = 0;
 if ( ! $h ) {
 
     if ( $n ) {
-print <<EOT;
-#!/usr/bin/perl
-#
-#
-#
-use warnings;
-use strict;
 
-EOT
+        print "#!/usr/bin/perl\n#\n#\n#\nuse warnings;\nuse strict;\n\n";
+
     }
     else {
-print <<EOT;
-#!/usr/bin/perl -w
-#
-#
-#
-use strict;
 
-EOT
-   }
+        print "#!/usr/bin/perl -w\n#\n#\n#\nuse strict;\n\n";
+
+    }
 
 }
 
 if ( $d ) {
 
-print <<'EOT';
-#
-#
-#
-my $some_dir = '/some/dir';
-EOT
+    print "#\n#\n#\nmy \$some_dir = '/some/dir';\n";
 
     if ( $n ) {
 
@@ -64,31 +48,32 @@ EOT
 if ( $f ) {
 
     my $file;
-    if ( $n ) {
-$file = sprintf <<'EOT';
-
-open (my $file_fh, $file) || die "Can't read '$file': $!\n";
-while (defined (my $line = <$file_fh>)) {
 
     #
+    # If you're reading a directory you will need that in the path to the file.
+    #
+    if ( $d ) {
 
-}
-close $file_fh;
+        $file_path = '$some_dir/$file';
 
-EOT
     }
     else {
-$file = sprintf <<'EOT';
 
-open (FILE, $file) || die "Can't read '$file': $!\n";
-while (defined (my $line = <FILE>)) {
+        $file_path = '$file';
 
-    #
+    }
 
-}
-close FILE;
+    if ( $n ) {
 
-EOT
+        $file = sprintf qq~\nopen (my \$file_fh, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
+            "while (defined (my \$line = <\$file_fh>)) {\n\n    #\n\n}\nclose \$file_fh;\n\n";
+
+    }
+    else {
+
+        $file = sprintf qq~\nopen (FILE, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
+            "while (defined (my \$line = <FILE>)) {\n\n    #\n\n}\nclose FILE;\n\n";
+
     }
 
     if ( $indent ) {

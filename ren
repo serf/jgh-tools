@@ -11,6 +11,7 @@ use File::Glob qw(:globally :nocase);
 use File::Copy;
 
 my $editor = '/usr/bin/vi';
+$editor = '/usr/bin/vim' if -x '/usr/bin/vim';
 
 my @files = @ARGV;
 

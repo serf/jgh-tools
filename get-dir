@@ -69,7 +69,7 @@ else {
 
 =in your .bashrc:
 export DIR_VTMP=/var/tmp
-function gd {
+gd () {
   case "$1" in
     "" )
         get-dir
@@ -88,8 +88,7 @@ function gd {
   esac
 }
 
-_gd()
-{
+_gd () {
     local cur prev opts
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -109,3 +108,4 @@ www:/var/www
 tmp:/tmp
 ulb:/usr/local/bin
 =cut
+

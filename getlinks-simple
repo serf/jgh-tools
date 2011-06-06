@@ -1,0 +1,54 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+
+# Extract URLs from a specified URL
+# Usage perl GETLINKS.PL url
+# eg: perl getlinks.pl http://www.example.com/
+
+use LWP::UserAgent;
+use HTML::LinkExtor;
+use URI::URL;
+use Data::Dumper;
+
+# Store extracted URLs in a text file
+# open(OUTPUT,">getlinks.txt");
+
+my $url = $ARGV[0];
+die "Usage: $0 URL\n" if ! $url;
+
+my $ua = LWP::UserAgent->new;
+$ua->agent("URLX Tractor");
+
+# Set up a callback that collects links
+my @links = ();
+
+# Make the parser. Unfortunately, we don't know the base yet
+# (it might be diffent from $url)
+my $p = HTML::LinkExtor->new(\&callback);
+
+# Request document and parse it as it arrives
+my $res = $ua->request(HTTP::Request->new(GET => $url),sub{$p->parse($_[0])});
+
+# print Dumper \$res;
+
+# Expand all URLs to absolute ones
+my $base = $res->base;
+@links = map { $_ = url($_, $base)->abs; } @links;
+
+# Print them out
+
+sub callback {
+    my($tag, %attr) = @_;
+    return if $tag eq 'img'; # Ignore <img ...>
+    my $link = $attr{'href'} if $attr{'href'};
+    return if ! $link;
+    push(@links, $link) if $link =~ /./;
+}
+
+my %links;
+for my $link (@links) {
+    next if $links{$link}++ > 0;
+    print ${$link}[0] . $/;
+}
+

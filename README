@@ -129,6 +129,9 @@ pc
 petar
     Directory of files from: http://geocities.com/h2428/petar/
 
+putty_reg.pl
+    Create a Windows shortcut to each session stored in PuTTY
+
 README
     Well done... You did what you were told! :-)
 

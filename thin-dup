@@ -2,14 +2,15 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #
 #   Program: thin-dup
-#   Version: 4.2
+#   Version: 4.3
 #   Purpose: To find and confirm removal of duplicate copies of files
 #            in the current directory.
 #
 #   Author:   John Harrison
-#   Revision: 20 June 2003 4.0
-#             19 July 2003 4.1
-#             22 Nov  2004 4.2 Add die messages, verbose flag & tick.
+#   Revision: 20 Jun 2003 4.0
+#             19 Jul 2003 4.1
+#             22 Nov 2004 4.2 Add die messages, verbose flag & tick.
+#             06 Jun 2011 4.3 Protect filenames in open & die messages
 #
 #   This is the fourth major re-write.
 #   The previous versions were all shell scripts.
@@ -75,7 +76,7 @@ GetOptions (
     ) || die "Usage: $0 -[f|y|i|v]\n";
 
 unless (@files) {
-    opendir(D, ".") || die "Can't open directory: $!\n";
+    opendir(D, ".") || die "Can't open this directory: $!\n";
     @files = sort grep {-f $_} grep { /./ } readdir(D);
 }
 
@@ -120,7 +121,7 @@ for my $size (sort {$b <=> $a} keys %sizes) {
                     print "\r", $tick[$count++];
                     $count = 0 if ($count eq 4);
                 }
-                open(FILE, $file) || die "Can't read $file: $!\n";
+                open(FILE, "$file") || die "Can't read '$file': $!\n";
                 my $digest = md5_hex(<FILE>);
                 close(FILE);
                 $digests{$inode} = $digest;
@@ -187,3 +188,4 @@ for my $digest (@digests) {
     }
 
 }
+

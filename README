@@ -1,10 +1,34 @@
 These are tools I use to make life easier working on Linux & Unix machines.
+They are mostly, but not all by me. Where appropriate I have given credit.
 
-backup - 
+acd_func.sh
+    extends bash's CD to keep, display and access history of visited directory names
+    from: http://geocities.com/h2428/petar/
+
+backup
     backs up the filenames supplied to copies which include the
     original file's timestamp in their name.
     
     http://snippets.dzone.com/posts/show/8251
+
+colours.pl
+    Show the available terminal colours with their escape code.
+
+dec2oct
+    Convert a decimal number to it's IP address octets
+    e.g.:
+          16777216 = 1.0.0.0         = 256 x 256 x 256
+        4294967295 = 255.255.255.255 = (256 x 256 x 256 x 256) - 1
+
+dos2ux
+    Strip dos end-of-line characters (carriage return)
+
+dump
+    Scrape the text of a web page (requires elinks)
+
+epoch2gmt
+    Convert the time in seconds since the epoch back to its date string
+    (e.g. as output by +%s option to gnu date)
 
 get-dir
     get-dir / gd - a simple way of jumping around dirs you use all the time
@@ -25,9 +49,60 @@ get-dir
 
     http://snippets.dzone.com/posts/show/9863
 
+get-img-links
+    Output the img links in a web page (based on getlinks-simple)
+
+getlinks
+    Output the links in a web page
+    (needs HTML::TreeBuilder - or use getlinks-simple)
+
+getlinks-simple
+    Output the links in a web page - no HTML::TreeBuilder
+
+get-title
+    Output the title of a web page
+
+html
+    Boilerplate template for quickly writing web pages
+
+html-list
+    Generate an HTML page listing the files supplied on STDIN
+    e.g.:
+        ls | html-list -title="Some files..."
+    or
+        getlinks https://github.com/serf/jgh-tools | html-list
+
+inline
+    Invoke Perl's inline edit on a file to substitute a string with another
+
+ip2hex
+    IP address to HEX address converter
+    e.g. ip2hex 158.23.45.10 outputs 9E172D0A
+    from: http://perlmonks.org/?node_id=11876
+
+latest-git
+    Output the links to the latest version of thE git RPMs
+    (based on getlinks-simple)
+    my $url = 'http://kernel.org/pub/software/scm/git/RPMS/x86_64/';
+    ...which you can then use with:  wget -Ni list
+       or:   for I in $(cat list); do curl -O -s $I; done
+
+lower
+    If called with a command line argument of a filename it will rename
+    that file to the all-lower-case version of the filename.
+    If called with no arguments it will lower all characters given on stdin.
+    (also see upper)
+
+lwr
+    lower text inside known html tags.
+    (useful when converting to xhtml which is all lower-case)
+
 magic
     
     http://snippets.dzone.com/posts/show/10151
+
+md5-gen-sums
+    Generate sums file for thin-copy
 
 new
     skeleton code for new Perl program
@@ -45,11 +120,39 @@ new
     This saves you retyping it, making a typo, and makes sure you've not forgotten anything. 
     http://snippets.dzone.com/posts/show/9151
 
+only-in
+    find lines which are in the first file, but not in the second.
+
+pc
+    Perl calculator - simple command line calculator
+
+petar
+    Directory of files from: http://geocities.com/h2428/petar/
+
+README
+    Well done... You did what you were told! :-)
+
+re-hex
+    hexadecimal encode an ASCII url (i.e. with % signs)
+    (opposite of un-hex)
+
 ren
     rename files interactively
     You may change the path to your editor...
     Mine's usually /usr/bin/vim - but /bin/vi is often symlinked to that if it's installed...
     http://snippets.dzone.com/posts/show/7955
+
+rot13
+    perform simple rot13 encryption
+
+sci
+    A pair of scissors... draw a perforated line to cut along...
+    You can call this from within vi with <ESC>!!sci<Return> to get:
+    8< - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    Useful in email bodies around examples etc...
+
+sort-ip
+    The fastest way I know of to numerically sort a list of IP addresses
 
 ssh-agent
     Re-use existing ssh-agent
@@ -89,4 +192,31 @@ thin-dup
     remove duplicate files
     This compares the md5sum of files and prompts to remove copies of files that are duplicated.
     http://snippets.dzone.com/posts/show/7868
+
+thin-zero
+    Remove (with confirmation) any empty (zero byte) files in this directory.
+
+tick
+    Draw a ticking clock hand, like: '/ - \ |' as per Sun 'processing' prompt
+    This can have a message after it.
+    Useful as a lightweight SSH keepalive by generating constant traffic
+    (i.e. run it in your terminal while you're not interacting with it)
+
+un-hex
+    Convert a hexadecimal encoded url (i.e. with % signs) to ASCII
+
+un-unicode
+    Very rudimentary convertor to strip unicode data to ASCII
+
+upper
+    If called with a command line argument of a filename it will rename
+    that file to the all-upper-case version of the filename.
+    If called with no arguments it will upper all characters given on stdin.
+    (also see lower)
+
+ux2dos
+    Add DOS carriage returns (and END OF FILE marker) to Unix ASCII file
+
+viw
+    Invoke vi on the given command (script!) in your path
 

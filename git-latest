@@ -1,0 +1,96 @@
+#!/usr/bin/perl -s
+#
+# Extract URLs from a specified URL
+#
+our $n; # Use $0 -n if you want package names too
+use warnings;
+use strict;
+
+my $url = 'http://pkgs.repoforge.org/git/';
+# my $url = 'http://packages.sw.be/git/';
+# my $url = 'http://kernel.org/pub/software/scm/git/RPMS/x86_64/';
+# my $url = 'http://www.mirrorservice.org/sites/apt.sw.be/redhat/el5/en/x86_64/rpmforge/RPMS/';
+# my $url = 'http://wftp.tu-chemnitz.de/pub/linux/dag/redhat/el5/en/x86_64/rpmforge/RPMS/';
+# my $url = 'http://ftp-stud.fht-esslingen.de/dag/redhat/el5/en/x86_64/rpmforge/RPMS/';
+# my $url = 'http://fr2.rpmfind.net/linux/dag/redhat/el5/en/x86_64/rpmforge/RPMS/';
+
+use LWP::UserAgent;
+use HTML::LinkExtor;
+use URI::URL;
+use Data::Dumper;
+
+my $ua = LWP::UserAgent->new;
+$ua->agent("Git Latest");
+
+# Set up a callback that collects links
+my @links = ();
+
+# Make the parser. Unfortunately, we don't know the base yet
+# (it might be diffent from $url)
+my $p = HTML::LinkExtor->new(\&callback);
+
+# Request document and parse it as it arrives
+my $res = $ua->request(HTTP::Request->new(GET => $url),sub{$p->parse($_[0])});
+
+# Expand all URLs to absolute ones
+my $base = $res->base;
+@links = map { $_ = url($_, $base)->abs; } @links;
+
+sub callback {
+
+    my($tag, %attr) = @_;
+    return if $tag eq 'img'; # Ignore <img ...>
+
+    my $link = $attr{'href'} if $attr{'href'};
+    return if ! $link;
+    return if $link =~ /.i686.rpm$/;
+    return if $link =~ /.i386.rpm$/;
+    return if $link =~ /.src.rpm$/;
+    return if $link =~ /\.rh7\./;
+    return if $link =~ /\.rh9\./;
+    return if $link =~ /\.el2\./;
+    return if $link =~ /\.el3\./;
+    return if $link =~ /\.el4\./;
+    # return if $link =~ /\.el5\./;
+    return if $link =~ /\.el6\./;
+    # return if $link =~ /.x86_64.rpm$/;
+    return if $link !~ /\bgit/i;
+    return if $link =~ /\.git20090807\./i;
+    push(@links, $link) if $link =~ /./;
+
+}
+
+my $pkgs;
+
+my %links;
+for my $link (@links) {
+
+    # Make them unique
+    next if $links{$link}++ > 0;
+
+    my $line = ${$link}[0];
+
+    chomp $line;
+    if ( $line =~ m%/([^/]*$)% ) {
+        my $pkg = $1;
+        if ( $pkg =~ /^([^0-9]*)-([0-9].*)$/ ) {
+            $pkgs->{$1}->{$2} = $line;
+        }
+    }
+
+}
+
+# Obsolete packages:
+# delete $pkgs->{'git-core-debuginfo'};
+# delete $pkgs->{'perl-Email-Valid'};
+
+for my $pkg ( keys %$pkgs ) {
+
+    print "# $pkg\n" if $n;
+
+    my @pkgs = (sort keys %{$pkgs->{$pkg}} );
+
+    print $pkgs->{$pkg}->{$pkgs[-1]}, $/;
+
+}
+

@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $file = shift;
+$file = "-" if ! $file;
+
+#
+# The fields in the password file
+#
+my @f = qw( user pass uid gid gecos dir shell );
+
+open (FILE, $file) || die "Can't read '$file': $!\n";
+while (defined (my $line = <FILE>)) {
+
+    #
+    # We only want fields in valid syntax
+    #
+    next if $line !~ /:/;
+    chomp $line;
+
+    #
+    # Create a hash of the values using the field name as the hash key
+    # This is called a hash slice - it's building a hash from 2 arrays.
+    # See: http://www.perlmonks.org/?node_id=4402
+    #
+    my %f; @f{@f} = split(/:/, $line);
+
+    print qq~useradd -u $f{uid} -g $f{gid} -d $f{dir} -s $f{shell} -c "$f{gecos}" $f{user}\n~;
+
+}
+close FILE;
+

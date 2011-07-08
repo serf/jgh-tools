@@ -105,23 +105,31 @@ md5-gen-sums
     Generate sums file for thin-copy
 
 new
-    skeleton code for new Perl program
+    boilerplate skeleton code for new Perl program
 
     Template for a new Perl program - outputs commonly used skeleton code to save typing it again.
 
-    Usage:
-    new [-h] [-d] [-f] [-n]
-    where:
-      -h - skip header (hash bang, warnings & strictness pragmas)
-      -d - code for reading a directory (from perldoc -f readdir)
-      -f - code for reading a file.
-      -n - Perl 5.6 or newer lexical filehandles (defaults to old Perl TYPEGLOB)
+    Usage: new [-d] [-f] [-h] [-o] [-u]
+      where:
+          -d = Code for reading a directory (from perldoc -f readdir)
+          -f = Code for reading a file.
+          -h = Skip header (hash bang, warnings & strictness pragmas)
+               (i.e. just generate inline snippet)
+          -o = Use old (pre 5.6) Perl syntax TYPEGLOB & -w flag
+               instead of Perl 5.6 or newer lexical filehandles & use warnings; pragma
+          -u = This usage
+    
+      deprecated:
+          -n = Was 'new' - now use '-o' for old
 
     This saves you retyping it, making a typo, and makes sure you've not forgotten anything. 
     http://snippets.dzone.com/posts/show/9151
 
 only-in
     find lines which are in the first file, but not in the second.
+
+passwd2useradd
+    Turn a line of /etc/passwd to the correct syntax to add that line with useradd.
 
 pc
     Perl calculator - simple command line calculator

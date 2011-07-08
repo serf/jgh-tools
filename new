@@ -1,19 +1,38 @@
 #!/usr/bin/perl -s
 #
-# new - start a new perl program
+# new - start a new Perl program with boilerplate code
 #
 
 my $indent = 0;
+
+if ( $u ) {
+    print <<EOT;
+Usage: $0 [-h] [-d] [-f] [-o] [-u]
+  where:
+      -d = code for reading a directory (from perldoc -f readdir)
+      -f = code for reading a file.
+      -h = skip header (hash bang, warnings & strictness pragmas)
+           (i.e. just generate inline snippet)
+      -o = Use old (pre 5.6) Perl syntax TYPEGLOB & -w flag
+           instead of Perl 5.6 or newer lexical filehandles & use warnings; pragma
+      -u = This usage
+
+  deprecated:
+      -n = Was 'new' - now use '-o' for old
+EOT
+exit 1;
+}
+
 if ( ! $h ) {
 
-    if ( $n ) {
+    if ( $o ) {
 
-        print "#!/usr/bin/perl\n#\n#\n#\nuse warnings;\nuse strict;\n\n";
+        print "#!/usr/bin/perl -w\n#\n#\n#\nuse strict;\n\n";
 
     }
     else {
 
-        print "#!/usr/bin/perl -w\n#\n#\n#\nuse strict;\n\n";
+        print "#!/usr/bin/perl\n#\n#\n#\nuse warnings;\nuse strict;\n\n";
 
     }
 
@@ -23,20 +42,20 @@ if ( $d ) {
 
     print "#\n#\n#\nmy \$some_dir = '/some/dir';\n";
 
-    if ( $n ) {
-
-print <<'EOT';
-opendir(my $dir_fh, $some_dir) || die "Can't opendir '$some_dir': $!\n";
-my @files = grep { /^./ && -f "$some_dir/$_" } readdir($dir_fh);
-closedir $dir_fh;
-EOT
-
-    } else {
+    if ( $o ) {
 
 print <<'EOT';
 opendir(DIR_FH, $some_dir) || die "Can't opendir '$some_dir': $!\n";
 my @files = grep { /^./ && -f "$some_dir/$_" } readdir(DIR_FH);
 closedir DIR_FH;
+EOT
+
+    } else {
+
+print <<'EOT';
+opendir(my $dir_fh, $some_dir) || die "Can't opendir '$some_dir': $!\n";
+my @files = grep { /^./ && -f "$some_dir/$_" } readdir($dir_fh);
+closedir $dir_fh;
 EOT
 
     }
@@ -63,16 +82,16 @@ if ( $f ) {
 
     }
 
-    if ( $n ) {
+    if ( $o ) {
 
-        $file = sprintf qq~\nopen (my \$file_fh, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
-            "while (defined (my \$line = <\$file_fh>)) {\n\n    #\n\n}\nclose \$file_fh;\n\n";
+        $file = sprintf qq~\nopen (FILE, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
+            "while (defined (my \$line = <FILE>)) {\n\n    #\n\n}\nclose FILE;\n\n";
 
     }
     else {
 
-        $file = sprintf qq~\nopen (FILE, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
-            "while (defined (my \$line = <FILE>)) {\n\n    #\n\n}\nclose FILE;\n\n";
+        $file = sprintf qq~\nopen (my \$file_fh, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
+            "while (defined (my \$line = <\$file_fh>)) {\n\n    #\n\n}\nclose \$file_fh;\n\n";
 
     }
 
@@ -93,3 +112,4 @@ if ( $f ) {
     }
 
 }
+

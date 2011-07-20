@@ -30,6 +30,8 @@ do
 
     SOCK_PID=${SSH_AUTH_SOCK##*.}
     SSH_AGENT_PID=$(ps -fu${LOGNAME}|awk '/ssh-agent/ && ( $2=='${SOCK_PID}' || $3=='${SOCK_PID}' || $2=='${SOCK_PID}' +1 ) {print $2}')
+    export SSH_AGENT_PID;
+    export SSH_AUTH_SOCK;
 
     $SSH_ADD -l > /dev/null 2>&1
     if [ $? = 0 ]
@@ -62,7 +64,4 @@ do
     GOT_AGENT=0
 
 done
-
-export SSH_AGENT_PID;
-export SSH_AUTH_SOCK;
 

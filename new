@@ -73,7 +73,7 @@ if ( $f ) {
     #
     if ( $d ) {
 
-        $file_path = '$some_dir/$file';
+        $file_path = '"$some_dir/$file"';
 
     }
     else {

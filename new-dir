@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# Clone a directory structure and copy the permissions
+#
+
+DIR=$1
+DIR=${DIR%/}
+
+if [[ "" = "${DIR}" ]]
+then
+    echo "Usage: $0 DIR"
+    exit 1
+fi
+
+if [[ ! -d "${DIR}" ]]
+then
+    echo "$0: ERROR: Can't stat dir '${DIR}'"
+fi
+
+for SUB in $(find $DIR -type d)
+do
+    mkdir "new.$SUB"
+    eval $(perl -le'printf "chmod %o \"new.%s\"\n", 07777 & (stat)[2], $_ for @ARGV ' "$SUB")
+done
+
+if [[ -d "$DIR.old" ]]
+then
+    echo "$0: '$DIR.old' exists"
+    exit 1
+else
+    mv "$DIR" "$DIR.old"
+    if [[ $? = 0 ]]
+    then
+        echo "mv '$DIR' -> '$DIR.old'"
+    else
+        echo "$0: ERROR moving '$DIR' -> '$DIR.old'"
+        exit 1
+    fi
+fi
+
+if [[ -d "$DIR" ]]
+then
+    echo "$0: '$DIR' still exists"
+    exit 1
+else
+    mv "new.$DIR" "$DIR"
+fi
+

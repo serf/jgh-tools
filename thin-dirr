@@ -1,0 +1,219 @@
+#!/usr/bin/perl -w
+#
+# Program: thin-dir
+# Description:
+#  Weeds out duplicate copies in another directory of files in this directory.
+#
+# 3.3 JGH 020331 Version number to be in sync with thin_dup.
+# 3.4 JGH 020409 Added "-y"
+# 4.0 JGH 080414 Re-wrote in Perl
+# 4.1 JGH 090908 Got rid of dependence on Term::ReadKey
+# 4.2 JGH 091026 Fixed a bug in the screen output (removed $nl) works in 5.6
+
+use strict;
+
+use Getopt::Std;
+use Digest::MD5;
+use File::Find ();
+
+# Set the variable $File::Find::dont_use_nlink if you're using AFS,
+# since AFS cheats.
+
+# for the convenience of &wanted calls, including -eval statements:
+use vars qw/*name *dir *prune/;
+*name   = *File::Find::name;
+*dir    = *File::Find::dir;
+*prune  = *File::Find::prune;
+
+sub DEBUG { 0 }
+
+our $opt_y;
+
+getopts('y');
+
+my $other_dir = shift;
+
+die "Usage: $0 [-y] OTHER_DIR\n" unless $other_dir;
+
+my @other_dir = lstat($other_dir);
+
+die "$0: Other dir '$other_dir' does not exist.\n" unless $other_dir[2];
+
+my @this_dir = lstat('.');
+
+#
+# If the inodes match and the filesystem device numbers match...
+#
+die "$0: EXITING: Target dir '$other_dir' is this dir!\n"
+    if $this_dir[1] == $other_dir[1] && $this_dir[0] == $other_dir[0];
+
+my @thin_files;
+sub wanted {
+    my ($dev,$ino,$mode,$nlink,$uid,$gid);
+
+    (($dev,$ino,$mode,$nlink,$uid,$gid) = lstat($_)) &&
+    -f _
+    && push(@thin_files, $name);
+}
+
+File::Find::find({wanted => \&wanted}, '.');
+
+my @type = (
+   "non-existant file",
+   "fifo (named pipe)",
+   "character special device",
+   "unknown file type 3",
+   "directory",
+   "unknown file type 5",
+   "block special device",
+   "unknown file type 7",
+   "regular file",
+   "unknown file type 9",
+   "symbolic link"
+);
+
+sub sum_file($) {
+
+    my $file_to_sum = shift;
+
+    open(FILE, $file_to_sum) or die "Can't read '$file_to_sum': $!\n";
+    binmode(FILE);
+    my $file_sum = Digest::MD5->new->addfile(*FILE)->hexdigest;
+    close FILE;
+    return $file_sum;
+
+}
+
+my %pw;
+
+sub list_file ($$) {
+
+    my ($stat, $file) = (shift, shift);
+
+    my $mode = $stat->[2] & 07777;
+
+    #
+    # Cache user and group first time round
+    # in case you're using NIS or LDAP
+    #
+    unless ( $pw{usr}{$stat->[4]} ) {
+        $pw{usr}{$stat->[4]} = getpwuid($stat->[4]);
+    }
+    unless ( $pw{grp}{$stat->[5]} ) {
+        $pw{grp}{$stat->[5]} = getgrgid($stat->[5]);
+    }
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+        gmtime($stat->[9]);
+
+    printf "%07d %03o %d %s %s %d %04d-%02d-%02d %02d:%02d:%02d $file\n",
+        $stat->[1], $mode, $stat->[3], $pw{usr}{$stat->[4]},
+        $pw{grp}{$stat->[5]}, $stat->[7],
+        $year+1900, $mon+1, $mday, $hour, $min, $sec;
+
+}
+
+my %sum;
+
+FILE: for my $file ( @thin_files ) {
+
+    my @file = lstat($file);
+
+    #
+    # Short name for this_filesystem.this_file
+    #
+    my $this = "$file[0].$file[1]";
+
+    my $perm = $file[2];
+    my $mode = $perm & 07777;
+
+    my $type = ( $perm - $mode ) / 4096 ;
+
+    unless ( $type == 8 ) {
+
+        DEBUG && print "$0: Skipping $type[$type] '$file'\n";
+
+        next FILE;
+
+    }
+    else {
+
+        my $other = "$other_dir/$file";
+
+        my @other = lstat($other);
+
+        #
+        # Check the other file exists (has an inode num)
+        #
+        next FILE unless $other[1];
+
+        #
+        # Check the sizes are the same
+        #
+        next FILE unless $other[7] == $file[7];
+
+        #
+        # Short name for that_filesystem.that_file
+        #
+        my $that = "$other[0].$other[1]";
+
+        #
+        # Don't sum the same data twice...
+        #
+        unless ( $sum{$this} ) {
+            $sum{$this} = sum_file("./$file");
+        }
+        DEBUG >= 2 && print "$file: '$sum{$this}''\n";
+
+        unless ( $sum{$that} ) {
+            $sum{$that} = sum_file("$other");
+        }
+        DEBUG >= 2 && print "$other: '$sum{$that}''\n";
+
+        next FILE unless
+            $sum{$this} eq $sum{$that};
+
+        DEBUG && print "'$file' matches '$other'\n";
+
+        list_file(\@file, $file);
+
+        list_file(\@other, $other);
+
+        my $key;
+
+        if ( $opt_y ) {
+
+            $key = "y";
+
+            print "Force";
+
+        } else {
+
+            $| = 1;
+
+            print "Remove '$file'? [y|N] ";
+
+            system "stty", '-icanon', 'eol', "\001";
+
+            $key = getc(STDIN);
+
+            system "stty", 'icanon', 'eol', '^@'; # ASCII null
+
+        }
+
+        if ($key =~ /^y$/i) {
+
+            unlink($file) || die "Can't unlink '$file': $!\n";
+
+            print " -> removed '$file'\n";
+
+        }
+        elsif ($key !~ /^\n/) {
+
+            print $/;
+
+        }
+
+    }
+
+}

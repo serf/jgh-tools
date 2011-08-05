@@ -1,13 +1,13 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #
 # ren - rename files interactively
 # John Harrison
 # 14 August 2006 - from shell version
 #
-use warnings;
+# use warnings;
 use strict;
 
-use File::Glob qw(:globally :nocase);
+# use File::Glob qw(:globally :nocase);
 use File::Copy;
 
 my $editor = '/usr/bin/vi';

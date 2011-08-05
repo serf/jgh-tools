@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# core_umxhzp03_mx.quickfix_65787_16001_1254911088_13343.pstack
+# core 'core_umxhzp03_mx.quickfix_65787_16001_1254911088_13343' of 13343: mx.quickfix
+#
+
+CORE=$1
+file $CORE|grep "core file.*from" > /dev/null
+if [[ $? != 0 ]]
+then
+    echo "$0: '$CORE' not a core file"
+    exit 1
+fi
+
+CORE_FROM=$(file $CORE | cut -d"'" -f2)
+
+FROM_PID=$(pmap $CORE | awk '/^core/{print $4;exit}')
+
+# 4 uid      numeric user ID of file's owner
+# 5 gid      numeric group ID of file's owner
+# 9 mtime    last modify time in seconds since the epoch 
+
+UID_GID_MTIME=$(perl -e 'print join("_", (stat("'$CORE'"))[4,5,9]), $/;')
+
+OUTPUT=core_${CORE_FROM}_${UID_GID_MTIME}_${FROM_PID%:*}
+
+pstack $CORE > $OUTPUT.pstack
+pmap   $CORE > $OUTPUT.pmap
+pargs  $CORE > $OUTPUT.pargs
+ls -l $OUTPUT.*
+
+rm -i $CORE
+

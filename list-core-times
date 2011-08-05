@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+#
+# John Harrison - show the times of the coredumps from the timestamp in their filenames
+#
+
+use warnings;
+use strict;
+use Getopt::Std;
+
+#
+# The format of the coredump filenames is viewable in coreadm:
+#
+# $ coreadm
+#     global core file pattern: /var/core/core_%n_%f_%u_%g_%t_%p
+#     global core file content: default
+#       init core file pattern: core
+#       init core file content: default
+#            global core dumps: enabled
+#       per-process core dumps: disabled
+#      global setid core dumps: enabled
+# per-process setid core dumps: disabled
+#     global core dump logging: enabled
+#
+# See 'man coreadm' for details, but it's:
+#    'nodename, filename, UID, GID, timestamp, PID'
+#
+
+my $mx_core_dir = '/export/mx_core';
+
+#
+# We need these later...
+#
+my @mon  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my @day  = qw( Sun Mon Tue Wed Thu Fri Sat );
+
+opendir(my $dir_fh, $mx_core_dir) || die "Can't opendir '$mx_core_dir': $!\n";
+my @files = grep { /^core/ && -f "$mx_core_dir/$_" } readdir($dir_fh);
+closedir $dir_fh;
+
+my $times;
+
+for my $file ( @files ) {
+
+    if ( $file =~ /^core_(.*?)_(.*?)_(\d+)_(\d+)_(\d+)_(\d+).(pargs|pmap|pstack)$/ ) {
+        my $time = $5;
+        die "$0: Couln't parse filename '$file' for date.\n" if $time < 1000000;
+        $times->{$5} = 1;
+    }
+    else {
+        print "bad filename: '$file'\n";
+    }
+
+}
+
+for my $time ( sort { $a <=> $b } keys %$times ) {
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+        = gmtime($time);
+
+    printf "%4d-%02d-%02d %02d:%02d:%02d (%s %02d %s %04d) %d\n",
+        $year + 1900, $mon + 1, $mday, $hour, $min, $sec,
+        $day[$wday], $mday, $mon[$mon], $year + 1900, $time;
+
+}
+

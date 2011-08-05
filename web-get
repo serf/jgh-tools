@@ -1,0 +1,269 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use IO::Socket;
+use Getopt::Long;
+
+my ($host, $port);
+
+my %opts;
+GetOptions(
+    'h=s'   => \$host,
+    'p=s'   => \$port,
+    'd'   => \$opts{debug},
+    'o'   => \$opts{write_file},
+    'l'   => \$opts{do_links},
+    'l1'  => \$opts{do_last},
+    'm=s' => \$opts{mask},
+);
+
+$opts{do_links} = 1 if $opts{do_last};
+
+die "Usage: $0 -h HOST -p PORT [-d|-o|-l|-m mask] PATH_TO_FILE\n"
+    if ! $host || ! $port;
+
+sub DEBUG {$opts{debug}}
+
+my $file = shift;
+$file = '/' if ! $file;
+
+my $contents = "";
+
+sub parse_links ($\@) {
+
+    my ($uri, $contents) = (shift,shift);
+    $uri =~ s|//*|/|g;
+
+    my $links;
+
+    for my $tag ( @$contents ) {
+
+        if ( $tag =~ /href=([^>]*)>/i ) {
+
+            my $link = $1;
+
+            if ( $link =~ /^"([^"]*)"/ ) {
+                $link = $1;
+            }
+            elsif ( $link =~ /^'([^']*)'/ ) {
+                $link = $1;
+            }
+
+            if ( $link eq '/' ) {
+                next;
+            }
+            elsif ( $link =~ /^\?/ ) {
+                next;
+            }
+
+            # To avoid duplicate links (had no example to test on)
+            $link =~ s|//*|/|g;
+            $links->{$link} = 1;
+
+        }
+
+    }
+
+    my @links;
+    for my $link ( sort keys %$links ) {
+        if ( $opts{mask} ) {
+            $opts{mask} =~ s|//*|/|g;
+            $opts{mask} =~ s|^/||;
+            next if $link !~ /$opts{mask}/;
+        }
+        $link = "$uri$link" if $link !~ m|^/|;
+        $link =~ s|//*|/|g;
+        next if $link eq '/';
+        push (@links, $link);
+    }
+
+    #
+    # Accidentally specified links on a binary file?
+    #
+    return if $#links == -1;
+
+    if ( $opts{do_last} ) {
+
+        #
+        # Only want latest link
+        #
+        print "$links[-1]\n";
+
+    }
+    else {
+
+        print join $/, @links, "";
+
+    }
+
+}
+
+sub get_file ($) {
+
+    my $uri = shift;
+    $uri =~ s|//*|/|g;
+
+    my $socket = IO::Socket::INET->new(
+        Proto     => "tcp",
+        PeerAddr  => $host,
+        PeerPort  => $port,
+    );
+    DEBUG && print STDERR "Connected OK\n";
+
+    die "$0: Can't connect to 'http://$host': $!\n" if ! $socket;
+    $socket->autoflush(1);
+
+    DEBUG && print "GET '/$uri'\n";
+
+    print $socket "GET /$uri HTTP/1.0\n\n";
+
+    my %flag;
+    %flag = (
+       'finished_header' => DEBUG, # Want to always show header in debug mode
+       'follow_redirect' => 0,
+       'is_text_file' => 0,
+       'die_after_header' => 0,
+    );
+
+    my $location = "";
+
+    while (defined (my $line = <$socket>)) {
+
+        if ( $flag{finished_header} ) {
+
+            if ( $opts{do_links} && $flag{is_text_file} == 1 ) {
+
+                $line =~ s|<a href="[^>]*">Parent Directory</a>||g;
+                chomp $line;
+                $contents .= $line;
+
+            }
+            else {
+
+                print OUTFILE $line;
+
+            }
+
+        }
+        else {
+
+            #
+            # While we're still in the header...
+            #
+            if ( $line =~ m|^HTTP/1.1 200 OK| ) {
+
+                #
+                # Data will be forthcoming...
+                #
+
+            }
+            elsif ( $line =~ m|^HTTP/1.1 301 Moved Permanently| ) {
+                $flag{follow_redirect} = 1;
+            }
+            elsif ( $line =~ m|^HTTP/1.1 404 Not Found| ) {
+                return 404;
+            }
+            elsif ( $line =~ m|^HTTP/1.1 | ) {
+                #
+                # If we are still in the header and get another HTTP error
+                #
+                $flag{die_after_header} = 1;
+            }
+            elsif ( $line =~ m|^Location: (.*)\r$| ) {
+                $location = $1;
+            }
+            elsif ( $line =~ m|^Content-Type: text| ) {
+                $flag{is_text_file} = 1;
+            }
+            elsif ( $line =~ m|^Content-Type:| ) {
+
+                ( my $output_file = $uri ) =~ s|/+$||;
+                $output_file =~ s|^.*/||g;
+                $output_file = 'index.html' if ! $output_file;
+
+                close OUTFILE;
+                open ( OUTFILE, "> $output_file" )
+                    || die "$0: Can't write to '$file': $!\n";
+                $opts{write_file} = 1;
+
+            }
+
+            DEBUG && print STDERR $line;
+
+        }
+
+        #
+        # Turn printing on when we get to the end of the HTTP header
+        #
+        if ( $line =~ /^\r$/ ) {
+
+            $flag{finished_header} = 1;
+
+            if ( $flag{die_after_header} == 1 ) {
+                close $socket;
+                exit;
+            }
+            elsif ( $flag{follow_redirect} == 1 ) {
+                close $socket;
+                return $location;
+            }
+
+        }
+
+    }
+
+    close $socket;
+
+    if ( $opts{do_links} ) {
+
+        my @contents = split(/</, $contents);
+
+        parse_links ($uri, @contents);
+
+    }
+    return 0;
+
+}
+
+( my $output_file = $file ) =~ s|/+$||;
+$output_file =~ s|^.*/||g;
+$output_file = 'index.html' if ! $output_file;
+
+if ( $opts{write_file} ) {
+
+    open ( OUTFILE, "> $output_file" )
+        || die "$0: Can't write to '$file': $!\n";
+
+}
+else {
+
+    open ( OUTFILE, ">&STDOUT" ) || die "$0: Can't dup STDOUT: $!\n";
+
+}
+
+my $result = get_file($file);
+if ( $result =~ m|^http://$host/(.*)$| ) {
+
+    my $location = $1;
+    DEBUG && print "301: Location => '$location'\n";
+    get_file("$location");
+
+}
+elsif ( $result eq 404 ) {
+
+    close OUTFILE;
+    #
+    # If we asked to write a file, and there's a file there...
+    # (it will be empty because we just did '>' on it!)
+    #
+    DEBUG && print "Unlink '$output_file'\n";
+    unlink $output_file if $opts{write_file} && -f $output_file;
+    die "404 Not Found\n";
+
+}
+
+close OUTFILE;
+
+print "=> '$output_file'\n" if -f $output_file && $opts{write_file};
+

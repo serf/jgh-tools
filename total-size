@@ -1,0 +1,52 @@
+#!/usr/bin/perl -w
+#
+#
+#
+use strict;
+use Getopt::Std;
+
+my %opts;
+getopts('bkmg', \%opts);
+
+my $div = {
+    b => 1,
+    k => 1024,
+    m => 1048576,
+    g => 1073741824,
+};
+
+my $total = 0;
+while (<>) {
+    $total += (split(/\s+/,$_))[4] if /^-/;
+}
+
+sub show($) {
+
+    my $unit = shift;
+
+    if ( $total % $div->{$unit} ) {
+        printf "%.1f %s\n", $total / $div->{$unit}, uc($unit);
+    }
+    else {
+        printf "%d %s\n", $total / $div->{$unit}, uc($unit);
+    }
+    exit 0;
+
+}
+
+for my $mult qw(g m k b) {
+
+    if ( $opts{$mult} ) {
+        show($mult);
+    }
+
+}
+
+for my $mult qw(g m k) {
+
+    if ( $total > $div->{$mult} ) {
+        show($mult);
+    }
+
+}
+

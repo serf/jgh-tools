@@ -24,9 +24,9 @@ UID_GID_MTIME=$(perl -e 'print join("_", (stat("'$CORE'"))[4,5,9]), $/;')
 
 OUTPUT=core_${CORE_FROM}_${UID_GID_MTIME}_${FROM_PID%:*}
 
-pstack $CORE > $OUTPUT.pstack
-pmap   $CORE > $OUTPUT.pmap
-pargs  $CORE > $OUTPUT.pargs
+pstack   $CORE > $OUTPUT.pstack
+pmap     $CORE > $OUTPUT.pmap
+pargs -c $CORE > $OUTPUT.pargs
 ls -l $OUTPUT.*
 
 rm -i $CORE

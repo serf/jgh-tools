@@ -25,7 +25,7 @@ use Getopt::Std;
 #    'nodename, filename, UID, GID, timestamp, PID'
 #
 
-my $mx_core_dir = '/export/mx_core';
+my $core_dir = '.';
 
 #
 # We need these later...
@@ -33,8 +33,8 @@ my $mx_core_dir = '/export/mx_core';
 my @mon  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 my @day  = qw( Sun Mon Tue Wed Thu Fri Sat );
 
-opendir(my $dir_fh, $mx_core_dir) || die "Can't opendir '$mx_core_dir': $!\n";
-my @files = grep { /^core/ && -f "$mx_core_dir/$_" } readdir($dir_fh);
+opendir(my $dir_fh, $core_dir) || die "Can't opendir '$core_dir': $!\n";
+my @files = grep { /^core/ && -f "$core_dir/$_" } readdir($dir_fh);
 closedir $dir_fh;
 
 my $times;
@@ -44,7 +44,12 @@ for my $file ( @files ) {
     if ( $file =~ /^core_(.*?)_(.*?)_(\d+)_(\d+)_(\d+)_(\d+).(pargs|pmap|pstack)$/ ) {
         my $time = $5;
         die "$0: Couln't parse filename '$file' for date.\n" if $time < 1000000;
-        $times->{$5} = 1;
+        $times->{$time} = "core_$1_$2_$3_$4_$5_$6";
+    }
+    elsif ( $file =~ /^core_(.*?)_(\d+)_(\d+)_(\d+)_(\d+).(pargs|pmap|pstack)$/ ) {
+        my $time = $4;
+        die "$0: Couln't parse filename '$file' for date.\n" if $time < 1000000;
+        $times->{$time} = "core_$1_$2_$3_$4_$5";
     }
     else {
         print "bad filename: '$file'\n";
@@ -57,9 +62,9 @@ for my $time ( sort { $a <=> $b } keys %$times ) {
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
         = gmtime($time);
 
-    printf "%4d-%02d-%02d %02d:%02d:%02d (%s %02d %s %04d) %d\n",
+    printf "%4d-%02d-%02d %02d:%02d:%02d (%s %02d %s %04d) %s\n",
         $year + 1900, $mon + 1, $mday, $hour, $min, $sec,
-        $day[$wday], $mday, $mon[$mon], $year + 1900, $time;
+        $day[$wday], $mday, $mon[$mon], $year + 1900, $times->{$time};
 
 }
 

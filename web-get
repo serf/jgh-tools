@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use IO::Socket;
 use Getopt::Long;
+use Time::Local;
 
 my ($host, $port);
 
@@ -29,6 +30,14 @@ my $file = shift;
 $file = '/' if ! $file;
 
 my $contents = "";
+
+my @mon  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my %mon; @mon{@mon} = (0..11);
+
+my @day  = qw( Sun Mon Tue Wed Thu Fri Sat );
+my $date;
+my $utime = time;
+my $atime = time;
 
 sub parse_links ($\@) {
 
@@ -188,6 +197,22 @@ sub get_file ($) {
                 $opts{write_file} = 1;
 
             }
+            elsif ( $line =~ m/^Last-Modified: ..., (.+) (...) (....) (..):(..):(..) (.*)$/ ) {
+
+                ($date->{day}, $date->{mon}, $date->{year},
+                 $date->{hour}, $date->{min}, $date->{sec},
+                 $date->{zone}) = ($1, $2, $3, $4, $5, $6, $7);
+
+                if ( $date->{zone} eq 'GMT' ) {
+                    my $isdst = 0;
+                }
+                else {
+                    my $isdst = 1;
+                }
+
+                $utime = timegm($date->{sec},$date->{min},$date->{hour},$date->{day},$mon{$date->{mon}},$date->{year});
+
+            }
 
             DEBUG && print STDERR $line;
 
@@ -265,5 +290,20 @@ elsif ( $result eq 404 ) {
 
 close OUTFILE;
 
-print "=> '$output_file'\n" if -f $output_file && $opts{write_file};
+if ( $opts{write_file} && -f $output_file ) {
+
+    DEBUG && print "Setting timestamp\n";
+
+    if ( utime($atime,$utime,$output_file) ) {
+
+        print "=> '$output_file'\n";
+
+    }
+    else {
+
+        die "$0: Can't set atime & mtime of '$output_file': $!\n";
+
+    }
+
+}
 

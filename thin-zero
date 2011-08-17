@@ -1,57 +1,122 @@
 #!/usr/bin/perl -w
-
+#
+#
+#
 use strict;
 use Getopt::Std;
-use Term::ReadKey;
+use POSIX qw(:termios_h);
+
+#
+# Do magic to read a single key with no <return>
+#
+my $fd_stdin = fileno(STDIN);
+my $term     = POSIX::Termios->new();
+$term->getattr($fd_stdin);
+my $oterm     = $term->getlflag();
+
+my $echo     = ECHO | ECHOK | ICANON;
+my $noecho   = $oterm & ~$echo;
+
+sub cbreak {
+    $term->setlflag($noecho);  # ok, so i don't want echo either
+    $term->setcc(VTIME, 1);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+
+sub cooked {
+    $term->setlflag($oterm);
+    $term->setcc(VTIME, 0);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+
+sub readkey {
+    my $key = '';
+    cbreak();
+    sysread(STDIN, $key, 1);
+    cooked();
+    return $key;
+}
+
+END { cooked() }
 
 $| = 1;
-my %opts;
 my $dir = ".";
-my $rm_flag = 0;
-my $my_name = $0;
-$my_name =~ s|^.*/||g;
+(my $my_name = $0) =~ s:^.*/::g;
 
-getopts('y', \%opts);  # get any command line arguments
+sub usage () {
 
-$rm_flag = $opts{'y'} if($opts{'y'});
+die <<EOT;
+Usage: $my_name [-f|y|h|u]
+  -y - Yes, remove
+  -f - Force yes
+  -h - Help (show usage)
+  -u - Usage
 
-opendir(DIR, $dir) || die "Can't open dir '$dir': $!\n";
-my @entries = readdir(DIR);
+EOT
+
+}
+
+#
+# Process command line arguments
+#
+my %opts;
+getopts('fy', \%opts) || usage;
+
+$opts{f} = 1 if $opts{y};
+$opts{u} = 1 if $opts{h};
+usage if $opts{u};
+
+opendir(DIR, $dir) || die "$my_name: ERROR: Can't open directory '$dir': $!\n";
+my @files = sort grep {-f $_} grep { /./ } readdir(DIR);
 closedir(DIR);
 
-for my $file_name (@entries) {
+for my $file (@files) {
 
-	if ( (stat($file_name))[7] == 0 ) {
+    next if (-l $file ); # skip symlinks
 
-	    my $confirm;
+    if ( (stat($file))[7] == 0 ) {
 
-		if (! $rm_flag) {
+        my $key;
 
-	    	print "$my_name: remove regular empty file `$file_name'? [yn] ";
+        if ( $opts{f} ) {
 
-			ReadMode 4; # Turn off controls keys
-			until (defined ($confirm = ReadKey(1)) && $confirm =~ /^[ynq]/i){};
-			ReadMode 0; # Reset tty mode before exiting
-			die $/ if ($confirm =~ /q/);
+            $key = "y";
 
-		} else {
+        } else {
 
-			$confirm = "y";
+            #
+            # Get user input
+            #
+            $| = 1;
+            print "$my_name: remove regular empty file `$file'? (y/n/q) ";
+            until (defined ($key = lc(readkey())) && $key =~ /[ynq\004]/){};
+            chomp($key);
 
-		}
+        }
 
-		if (lc($confirm) eq "y") {
+        if ( $key eq 'y' ) {
 
-			unlink($file_name) || die "Can't unlink `$file_name': $!\n";
-			print "removed `$file_name'\n";
+            unlink($file) || die "$my_name: Can't unlink `$file': $!\n";
+            print "removed `$file'\n";
 
-		} else {
+        } elsif ($key eq "\004") {
 
-			print $/;
+            die "EOF\n";
 
-		}
+        } elsif ($key eq 'q') {
 
-	}
+            #
+            # I want to quit now
+            #
+            die $/;
+
+        } else {
+
+            print $/;
+
+        }
+
+    }
 
 }
 

@@ -11,8 +11,9 @@
 #             19 Jul 2003 4.1
 #             22 Nov 2004 4.2 Add die messages, verbose flag & tick.
 #             06 Jun 2011 4.3 Protect filenames in open & die messages
+#             15 Aug 2011 4.4 Add -n, quit, usage, Getopt:Long -> Getopt::Std
 #
-#   This is the fourth major re-write.
+#   4.0 was the fourth major re-write.
 #   The previous versions were all shell scripts.
 #   This one goes like lightning compared to them!
 #   It uses md5sum to compare any files it finds which are
@@ -21,11 +22,14 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 use strict;
-use Getopt::Long;
+use Getopt::Std;
 use Digest::MD5 qw(md5_hex);
 use Time::localtime;
 use POSIX qw(:termios_h);
 
+#
+# Do magic to read a single key with no <return>
+#
 my $fd_stdin = fileno(STDIN);
 my $term     = POSIX::Termios->new();
 $term->getattr($fd_stdin);
@@ -58,26 +62,38 @@ END { cooked() }
 
 my (@files, @digests);
 my (%sizes, %inodes, %files, %info, %digests, %copies, %duplicates);
+(my $my_name = $0) =~ s:^.*/::g;
+
+sub usage () {
+
+die <<EOT;
+Usage: $my_name [-f|y|n|v|t|h|u]
+  -y - Yes, remove
+  -f - Force yes
+  -n - No, don't remove
+  -v - Verbose progress
+  -t - Show ticker
+  -h - Help (show usage)
+  -u - Usage
+
+EOT
+
+}
 
 #
-# option variables with default value (false)
+# Process command line arguments
 #
-my $rm_f = 0;
-my $rm_i = 0;
-my $verb = 0;
-my $tick = 0;
+my %opts;
+getopts('fyntvuh', \%opts) || usage;
 
-GetOptions (
-    'f+' => \$rm_f,
-    'y+' => \$rm_f,
-    'i+' => \$rm_i,
-    't+' => \$tick,
-    'v+' => \$verb
-    ) || die "Usage: $0 -[f|y|i|v]\n";
+$opts{f} = 1 if $opts{y};
+$opts{u} = 1 if $opts{h};
+usage if $opts{u};
+my $dir = '.';
 
 unless (@files) {
-    opendir(D, ".") || die "Can't open this directory: $!\n";
-    @files = sort grep {-f $_} grep { /./ } readdir(D);
+    opendir(DIR, $dir) || die "$my_name: ERROR: Can't open directory '$dir': $!\n";
+    @files = sort grep {-f $_} grep { /./ } readdir(DIR);
 }
 
 my @months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -114,19 +130,25 @@ for my $size (sort {$b <=> $a} keys %sizes) {
 
             my ($inode, $file) = ($inodes{$size}{$i}, $files{$size}{$i});
 
+            #
             # Don't bother to sum the same inode more than once
+            #
             if (! $digests{$inode}) {
-                print STDERR "Summing: $file", $/ if ($verb);
-                if ($tick) {
+
+                print STDERR "Summing: $file", $/ if ($opts{v});
+
+                if ($opts{t}) {
                     print "\r", $tick[$count++];
                     $count = 0 if ($count eq 4);
                 }
+
                 open(FILE, "$file") || die "Can't read '$file': $!\n";
                 my $digest = md5_hex(<FILE>);
                 close(FILE);
                 $digests{$inode} = $digest;
                 push(@digests, $digest) unless($copies{$digest}++);
                 $duplicates{$digest}{$copies{$digest}} = $file;
+
             }
 
         }
@@ -142,9 +164,11 @@ for my $digest (@digests) {
         my @duplicates;
 
         for my $i (1..$copies{$digest}) {
+
             my $file = $duplicates{$digest}{$i};
             push (@duplicates, $file);
             print "$info{$file} $file\n";
+
         }
 
         my $files = $#duplicates;
@@ -153,33 +177,48 @@ for my $digest (@digests) {
 
             my $key;
 
-            if ($rm_f) {
+            if ($opts{f}) {
 
                 $key = "y";
 
+            } elsif ($opts{n}) {
+
+                $key = "n";
+                print $/ if $copies{"$digest.seen"}++ == $files;
+                next;
+
             } else {
 
+                #
+                # Get user input
+                #
                 $| = 1;
-                print "Remove '$file'? [y|N] ";
-
-                until (defined ($key = readkey())){};
+                print "$my_name: remove regular file `$file'? (y/n/q) ";
+                until (defined ($key = lc(readkey())) && $key =~ /^[ynq\004]/){};
                 chomp($key);
 
             }
 
-            if ($key =~ /^y$/i) {
+            if ($key eq 'y') {
 
-                unlink($file);
-                print "removed `$file`\n";
+                unlink($file) || die "Can't unlink `$file': $!\n";
+                print "removed `$file'\n";
                 last if ($files-- < 2);
 
-            } elsif ($key =~ /^\003$/i) {
+            } elsif ($key eq "\004") {
 
-                die "\n";
+                die "EOF\n";
+
+            } elsif ($key eq 'q') {
+
+                #
+                # I want to quit now
+                #
+                die $/;
 
             } else {
 
-                print "\n";
+                print $/;
 
             }
 

@@ -56,14 +56,21 @@ get-img-links
     Output the img links in a web page (based on getlinks-simple)
 
 getlinks
+    Output the links in a web page - no HTML::TreeBuilder
+
+getlinks-htb
     Output the links in a web page
     (needs HTML::TreeBuilder - or use getlinks-simple)
 
-getlinks-simple
-    Output the links in a web page - no HTML::TreeBuilder
-
 get-title
     Output the title of a web page
+
+git-latest
+    Output the links to the latest version of thE git RPMs
+    (based on getlinks-simple)
+    my $url = 'http://kernel.org/pub/software/scm/git/RPMS/x86_64/';
+    ...which you can then use with:  wget -Ni list
+       or:   for I in $(cat list); do curl -O -s $I; done
 
 html
     Boilerplate template for quickly writing web pages
@@ -83,12 +90,9 @@ ip2hex
     e.g. ip2hex 158.23.45.10 outputs 9E172D0A
     from: http://perlmonks.org/?node_id=11876
 
-latest-git
-    Output the links to the latest version of thE git RPMs
-    (based on getlinks-simple)
-    my $url = 'http://kernel.org/pub/software/scm/git/RPMS/x86_64/';
-    ...which you can then use with:  wget -Ni list
-       or:   for I in $(cat list); do curl -O -s $I; done
+list-core-times
+    For Solaris
+    Show the times of the coredumps from the timestamp in their filenames
 
 lower
     If called with a command line argument of a filename it will rename
@@ -128,6 +132,9 @@ new
     This saves you retyping it, making a typo, and makes sure you've not forgotten anything. 
     http://snippets.dzone.com/posts/show/9151
 
+new-dir
+    Clone a directory structure and copy the permissions
+
 only-in
     find lines which are in the first file, but not in the second.
 
@@ -149,6 +156,9 @@ README
 re-hex
     hexadecimal encode an ASCII url (i.e. with % signs)
     (opposite of un-hex)
+
+read-core
+    For Solaris - run pstack, pmap and pargs on a core dump then remove it
 
 ren
     rename files interactively
@@ -197,6 +207,11 @@ thin-dir
     (i.e. have the same name and md5sum)
     http://snippets.dzone.com/posts/show/7869
 
+thin-dirr
+    Same as thin-dir but works recursively.
+  TODO: This was a quick hack on thin-dir to test the concept.
+    Look at integrating this into thin-dir & calling it with -r
+
 thin-down
     remove files
     Removes duplicate files from subdirectories.
@@ -216,6 +231,9 @@ tick
     Useful as a lightweight SSH keepalive by generating constant traffic
     (i.e. run it in your terminal while you're not interacting with it)
 
+total-size
+    Add up the size of all the files in the output of ls -l
+
 un-hex
     Convert a hexadecimal encoded url (i.e. with % signs) to ASCII
 
@@ -234,3 +252,4 @@ ux2dos
 viw
     Invoke vi on the given command (script!) in your path
 
+web-get

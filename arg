@@ -1,4 +1,7 @@
 #!/usr/bin/perl -w
+#
+# arg - print specified arguments (columns) from each line of input
+#
 
 use strict;
 
@@ -8,19 +11,26 @@ sub usage () {
 die <<EOT;
 Usage: $my_name [-b] LIST_OF_COLUMNS
   1 3      - 1st & 3rd
+  0        - Print all arguments in the line (= 1--1)
+  -0       - Print arguments in the line reversed (= -1-1)
+  1 0      - Print 1st argument followed by all the arguments (incl 1st again)
+
 forward ranges:
   1-3      - 1st to 3rd
   1--3     - 1st to 3rd last
   -3--1    - 3rd last to last
 backward ranges:
   3-1      - 3rd to 1st
+  -3-1     - 3rd last to 1st
   -1--3    - Last to 3rd last
   -1-3     - Last to 3rd
 
   -b       - Include blank lines
-  -c       - CSV format
-  =STRING= - Literal string
+  -c       - Output in CSV format instead of space seperated
+  =STRING= - Literal string "STRING"
   NF|c|-#  - Number of fields in line
+  -u       - This usage message
+  -h       - Help (this usage message)
 
 EOT
 
@@ -39,14 +49,14 @@ for my $argv ( @ARGV ) {
 
     for my $chunk ( @chunks ) {
 
-        if ( $chunk eq '-0' ) {
-
-            push @args, 'REV';
-
-        }
-        elsif ( $chunk eq '0' ) {
+        if ( $chunk eq '0' ) {
 
             push @args, 'LINE';
+
+        }
+        elsif ( $chunk eq '-0' ) {
+
+            push @args, 'REV';
 
         }
         elsif ( $chunk =~ /^-?\d+$/ ) {

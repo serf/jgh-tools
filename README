@@ -253,3 +253,5 @@ viw
     Invoke vi on the given command (script!) in your path
 
 web-get
+    Pure perl replacement for wget & cURL for boxes that can't have them    
+

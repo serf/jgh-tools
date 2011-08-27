@@ -1,0 +1,220 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+sub usage () {
+
+(my $my_name = $0) =~ s:^.*/::g;
+die <<EOT;
+Usage: $my_name [-b] LIST_OF_COLUMNS
+  1 3      - 1st & 3rd
+forward ranges:
+  1-3      - 1st to 3rd
+  1--3     - 1st to 3rd last
+  -3--1    - 3rd last to last
+backward ranges:
+  3-1      - 3rd to 1st
+  -1--3    - Last to 3rd last
+  -1-3     - Last to 3rd
+
+  -b       - Include blank lines
+  -c       - CSV format
+  =STRING= - Literal string
+  NF|c|-#  - Number of fields in line
+
+EOT
+
+}
+
+my @args;
+my %opts = (
+   b => 0,
+   e => 0,
+   s => ' ',
+);
+
+for my $argv ( @ARGV ) {
+
+    my @chunks = split(/\s+/, $argv);
+
+    for my $chunk ( @chunks ) {
+
+        if ( $chunk eq '-0' ) {
+
+            push @args, 'REV';
+
+        }
+        elsif ( $chunk eq '0' ) {
+
+            push @args, 'LINE';
+
+        }
+        elsif ( $chunk =~ /^-?\d+$/ ) {
+
+            $chunk-- if $chunk > -1;
+            push @args, $chunk;
+            next;
+
+        }
+        elsif ( $chunk =~ /^(\d+)-(\d+)$/ ) {
+
+            my ($from, $to) = ($1, $2);
+
+            $from--;
+            $to--;
+
+            if ( $from < $to ) {
+
+                push @args, ($from .. $to);
+
+            }
+            else {
+
+                push @args, reverse ( $to .. $from );
+
+            }
+
+        }
+        elsif ( $chunk =~ /^(-?\d+)-(-?\d+)$/ ) {
+
+            $opts{e} = 1;
+            push @args, "E$chunk";
+            
+        }
+        elsif ( $chunk eq 'NF' || $chunk eq 'c' || $chunk eq '-#' ) {
+
+            push @args, 'NF';
+
+        }
+        elsif ( $chunk eq '-b' ) {
+
+            $opts{b} = 1;
+
+        }
+        elsif ( $chunk eq '-c' ) {
+
+            #
+            # Set seperator to CSV
+            #
+            $opts{s} = ',';
+
+        }
+        elsif ( $chunk eq '-u' || $chunk eq '-h' ) {
+
+            usage;
+
+        }
+        elsif ( $chunk =~ /^=.*=$/ ) {
+
+            #
+            # Literal string
+            #
+            push @args, $chunk;
+
+        }
+        else {
+
+           die "$0: Arg '$chunk' isn't an integer.\n";
+
+        }
+
+    }
+
+}
+
+while ( <STDIN> ) {
+
+    chomp;
+    my @line = split(/\s+/, $_);
+    my @out;
+
+    for my $arg (@args) {
+
+        if ( $arg =~ /^=(.*)=$/ ) {
+
+            #
+            # Literal string
+            #
+            push @out, $1;
+
+        }
+        elsif ( $arg eq 'NF' ) {
+
+            push @out, $#line + 1;
+
+        }
+        elsif ( $arg eq 'REV' ) {
+
+            push @out, reverse @line;
+
+        }
+        elsif ( $arg eq 'LINE' ) {
+
+            push @out, @line;
+
+        }
+        elsif ( $opts{e} ) {
+
+            #
+            # Handle ranges with negatives
+            #
+            if ( $arg =~ /^E(-?\d+)-(-?\d+)$/ ) {
+
+                my @range;
+
+                my ($from, $to) = ($1, $2);
+
+                if ( $from =~ /^-/ ) {
+                    $from = $#line + $from +1;
+                }
+                else {
+                    $from--;
+                }
+
+                if ( $to =~ /^-/ ) {
+                    $to = $#line + $to +1;
+                }
+                else {
+                    $to--;
+                }
+
+                if ( $from < $to ) {
+
+                    push @range, ($from .. $to);
+
+                }
+                else {
+
+                    push @range, reverse ( $to .. $from );
+
+                }
+
+                for my $num (@range) {
+
+                    push @out, $line[$num] if $line[$num];
+
+                }
+
+            }
+            else {
+
+                push @out, $line[$arg] if $line[$arg];
+
+            }
+
+        }
+        else {
+
+            push @out, $line[$arg] if $line[$arg];
+
+        }
+
+    }
+
+    #
+    # Don't print blank lines unless -b is specified
+    #
+    print join ($opts{s}, @out) , $/ if $opts{b} || @out;
+
+}
+

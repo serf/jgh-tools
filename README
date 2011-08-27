@@ -5,8 +5,11 @@ acd_func.sh
     extends bash's CD to keep, display and access history of visited directory names
     from: http://geocities.com/h2428/petar/
 
+arg
+    Like "awk '{print $1}'" on steroids
+
 backup
-    backs up the filenames supplied to copies which include the
+    Backs up the filenames supplied to copies which include the
     original file's timestamp in their name.
     
     http://snippets.dzone.com/posts/show/8251

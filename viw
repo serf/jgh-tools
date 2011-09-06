@@ -1,4 +1,4 @@
 #!/bin/bash
 
-vi $(which $1)
+vi $(which $@)
 

@@ -53,7 +53,9 @@ sub sum_file($) {
         $md5->add($_);
     }
     close(FILE);
+
     return $md5->b64digest;
+
 }
 
 open (FIND, "find . -type f -exec stat -c '%i;%s;%n' {} \\;|") ||
@@ -67,7 +69,7 @@ while(<FIND>) {
 close(FIND);
 
 opendir(DIR, $dir) || die "Can't open directory '$dir' $!\n";
-@files = grep { /\./i && -f "$dir/$_" } readdir(DIR);
+@files = grep { /./ && -f "$dir/$_" } readdir(DIR);
 closedir DIR;
 
 for my $file (sort @files) {
@@ -97,7 +99,8 @@ for my $file (sort @files) {
             $SUMS{$INODE{$match_file}} = sum_file($match_file)
                 unless($SUMS{$INODE{$match_file}});
 
-                print "-$sum- $file\n";
+            print "-$sum- $file\n";
+
             if ( $SUMS{$INODE{$match_file}} eq "$sum" ) {
 
                 print "$INODE{$file} $SUMS{$INODE{$file}} $file\n",
@@ -128,5 +131,7 @@ for my $file (sort @files) {
             }
 
         }
+
     }
+
 }

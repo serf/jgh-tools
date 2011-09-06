@@ -12,6 +12,8 @@
 #             22 Nov 2004 4.2 Add die messages, verbose flag & tick.
 #             06 Jun 2011 4.3 Protect filenames in open & die messages
 #             15 Aug 2011 4.4 Add -n, quit, usage, Getopt:Long -> Getopt::Std
+#             05 Sep 2011 4.5 Add -r (so use File::Find instead of readdir)
+#                             Add -k & -o
 #
 #   4.0 was the fourth major re-write.
 #   The previous versions were all shell scripts.
@@ -26,6 +28,7 @@ use Getopt::Std;
 use Digest::MD5 qw(md5_hex);
 use Time::localtime;
 use POSIX qw(:termios_h);
+use File::Find ();
 
 #
 # Do magic to read a single key with no <return>
@@ -67,44 +70,91 @@ my (%sizes, %inodes, %files, %info, %digests, %copies, %duplicates);
 sub usage () {
 
 die <<EOT;
-Usage: $my_name [-f|y|n|v|t|h|u]
+Usage: $my_name [-r] [-f|y|n] [-v] [-t] [-h|u] [-o PATHS] [-k PATHS]
+  -r - Recurse into subdirectories
+  -k - Keep these files (requires argument)
+  -o - Other paths to include (outside this directory)
   -y - Yes, remove
-  -f - Force yes
+  -f - Force remove (same as yes)
   -n - No, don't remove
   -v - Verbose progress
   -t - Show ticker
   -h - Help (show usage)
   -u - Usage
 
+NB:
+  -o must come BEFORE -k on the command line if using both options
+
 EOT
 
 }
 
 #
-# Process command line arguments
+# Needed for displaying info
 #
-my %opts;
-getopts('fyntvuh', \%opts) || usage;
-
-$opts{f} = 1 if $opts{y};
-$opts{u} = 1 if $opts{h};
-usage if $opts{u};
-my $dir = '.';
-
-unless (@files) {
-    opendir(DIR, $dir) || die "$my_name: ERROR: Can't open directory '$dir': $!\n";
-    @files = sort grep {-f $_} grep { /./ } readdir(DIR);
-}
-
 my @months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
 
 my @tick = ('|', '/', '-', '\\');
 $| = 1;
 
+#
+# Process command line arguments
+#
+my %opts;
+getopts('rkfyntvuho:', \%opts) || usage;
+
+$opts{f} = 1 if $opts{y};
+$opts{u} = 1 if $opts{h};
+usage if $opts{u};
+
+my %keep;
+if ( $opts{k} ) {
+
+    %keep = map { $_ => 1 } grep {(-e $_ )} @ARGV;
+
+    print "Keep: ", join " ", keys %keep, $/;
+
+}
+
+#
+# Build list of files with File::Find
+#
+use vars qw/*name *dir *prune/;
+*name   = *File::Find::name;
+*dir    = *File::Find::dir;
+*prune  = *File::Find::prune;
+
+sub wanted {
+
+    ( $opts{r} || ( $File::Find::prune = 1 ) ) && push (@files, $name);
+
+}
+
+my %entries = map { $_ => 1 } grep {(-e $_ )} glob ".* *";
+delete $entries{'.'};
+delete $entries{'..'};
+if ( $opts{o} ) {
+
+    # my %other = map { $_ => 1 } grep {(-e $_ )} glob $opts{o};
+    # $entries{$_} = $other{$_} for keys %other;
+    # $entries{$_} = 1 for grep {(-e $_ )} glob $opts{o};
+    $entries{$_} = 1 for grep {(-e $_ )} $opts{o};
+    use Data::Dumper;
+    print Dumper \%entries;
+
+}
+
+File::Find::find({wanted => \&wanted}, sort keys %entries);
+
+#
+# Collect info about the list of files we've built
+#
 for my $file (@files) {
 
+    $file =~ s|^\./||;
     next if (-l $file ); # skip symlinks
+    next if (-d $file ); # skip directories
 
     my ($dev,$inode,$mode,$nlink,$uid,$gid,$rdev,$size,
         $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
@@ -121,6 +171,9 @@ for my $file (@files) {
 
 }
 
+#
+# Generate hashes for files with matching sizes
+#
 my $count;
 for my $size (sort {$b <=> $a} keys %sizes) {
 
@@ -157,6 +210,9 @@ for my $size (sort {$b <=> $a} keys %sizes) {
 
 }
 
+#
+# Process groups of files with the same hash (so the same content)
+#
 for my $digest (@digests) {
 
     if ($copies{$digest} > 1) {
@@ -177,7 +233,11 @@ for my $digest (@digests) {
 
             my $key;
 
-            if ($opts{f}) {
+            if ($keep{$file}) {
+
+                $key = "n";
+
+            }elsif ($opts{f}) {
 
                 $key = "y";
 

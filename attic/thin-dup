@@ -1,0 +1,230 @@
+#!/usr/bin/perl -w
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#
+#   Program: thin-dup
+#   Version: 4.3
+#   Purpose: To find and confirm removal of duplicate copies of files
+#            in the current directory.
+#
+#   Author:   John Harrison
+#   Revision: 20 Jun 2003 4.0
+#             19 Jul 2003 4.1
+#             22 Nov 2004 4.2 Add die messages, verbose flag & tick.
+#             06 Jun 2011 4.3 Protect filenames in open & die messages
+#             15 Aug 2011 4.4 Add -n, quit, usage, Getopt:Long -> Getopt::Std
+#
+#   4.0 was the fourth major re-write.
+#   The previous versions were all shell scripts.
+#   This one goes like lightning compared to them!
+#   It uses md5sum to compare any files it finds which are
+#   the same size and which have different inode numbers.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+use strict;
+use Getopt::Std;
+use Digest::MD5 qw(md5_hex);
+use Time::localtime;
+use POSIX qw(:termios_h);
+
+#
+# Do magic to read a single key with no <return>
+#
+my $fd_stdin = fileno(STDIN);
+my $term     = POSIX::Termios->new();
+$term->getattr($fd_stdin);
+my $oterm     = $term->getlflag();
+
+my $echo     = ECHO | ECHOK | ICANON;
+my $noecho   = $oterm & ~$echo;
+
+sub cbreak {
+    $term->setlflag($noecho);  # ok, so i don't want echo either
+    $term->setcc(VTIME, 1);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+
+sub cooked {
+    $term->setlflag($oterm);
+    $term->setcc(VTIME, 0);
+    $term->setattr($fd_stdin, TCSANOW);
+}
+
+sub readkey {
+    my $key = '';
+    cbreak();
+    sysread(STDIN, $key, 1);
+    cooked();
+    return $key;
+}
+
+END { cooked() }
+
+my (@files, @digests);
+my (%sizes, %inodes, %files, %info, %digests, %copies, %duplicates);
+(my $my_name = $0) =~ s:^.*/::g;
+
+sub usage () {
+
+die <<EOT;
+Usage: $my_name [-f|y|n|v|t|h|u]
+  -y - Yes, remove
+  -f - Force yes
+  -n - No, don't remove
+  -v - Verbose progress
+  -t - Show ticker
+  -h - Help (show usage)
+  -u - Usage
+
+EOT
+
+}
+
+#
+# Process command line arguments
+#
+my %opts;
+getopts('fyntvuh', \%opts) || usage;
+
+$opts{f} = 1 if $opts{y};
+$opts{u} = 1 if $opts{h};
+usage if $opts{u};
+my $dir = '.';
+
+unless (@files) {
+    opendir(DIR, $dir) || die "$my_name: ERROR: Can't open directory '$dir': $!\n";
+    @files = sort grep {-f $_} grep { /./ } readdir(DIR);
+}
+
+my @months = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
+
+my @tick = ('|', '/', '-', '\\');
+$| = 1;
+
+for my $file (@files) {
+
+    next if (-l $file ); # skip symlinks
+
+    my ($dev,$inode,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+    my $time = localtime($mtime);
+
+    $sizes{$size}++; # counting the files of this size
+    $inodes{$size}{$sizes{$size}} = $inode;
+    $files{$size}{$sizes{$size}} = $file;
+
+    $info{$file} = sprintf "%13i %3s %-2i %02i:%02i:%02i %4i",
+        $size, $months[$time->mon], $time->mday,
+        $time->hour, $time->min, $time->sec,
+        1900 + $time->year;
+
+}
+
+my $count;
+for my $size (sort {$b <=> $a} keys %sizes) {
+
+    if ($sizes{$size} > 1) {
+
+        for my $i (1..$sizes{$size}) {
+
+            my ($inode, $file) = ($inodes{$size}{$i}, $files{$size}{$i});
+
+            #
+            # Don't bother to sum the same inode more than once
+            #
+            if (! $digests{$inode}) {
+
+                print STDERR "Summing: $file", $/ if ($opts{v});
+
+                if ($opts{t}) {
+                    print "\r", $tick[$count++];
+                    $count = 0 if ($count eq 4);
+                }
+
+                open(FILE, "$file") || die "Can't read '$file': $!\n";
+                my $digest = md5_hex(<FILE>);
+                close(FILE);
+                $digests{$inode} = $digest;
+                push(@digests, $digest) unless($copies{$digest}++);
+                $duplicates{$digest}{$copies{$digest}} = $file;
+
+            }
+
+        }
+
+    }
+
+}
+
+for my $digest (@digests) {
+
+    if ($copies{$digest} > 1) {
+
+        my @duplicates;
+
+        for my $i (1..$copies{$digest}) {
+
+            my $file = $duplicates{$digest}{$i};
+            push (@duplicates, $file);
+            print "$info{$file} $file\n";
+
+        }
+
+        my $files = $#duplicates;
+
+        for my $file (@duplicates) {
+
+            my $key;
+
+            if ($opts{f}) {
+
+                $key = "y";
+
+            } elsif ($opts{n}) {
+
+                $key = "n";
+                print $/ if $copies{"$digest.seen"}++ == $files;
+                next;
+
+            } else {
+
+                #
+                # Get user input
+                #
+                $| = 1;
+                print "$my_name: remove regular file `$file'? (y/n/q) ";
+                until (defined ($key = lc(readkey())) && $key =~ /^[ynq\004]/){};
+                chomp($key);
+
+            }
+
+            if ($key eq 'y') {
+
+                unlink($file) || die "Can't unlink `$file': $!\n";
+                print "removed `$file'\n";
+                last if ($files-- < 2);
+
+            } elsif ($key eq "\004") {
+
+                die "EOF\n";
+
+            } elsif ($key eq 'q') {
+
+                #
+                # I want to quit now
+                #
+                die $/;
+
+            } else {
+
+                print $/;
+
+            }
+
+        }
+
+    }
+
+}
+

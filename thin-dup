@@ -2,33 +2,19 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #
 #   Program: thin-dup
-#   Version: 4.3
 #   Purpose: To find and confirm removal of duplicate copies of files
-#            in the current directory.
-#
 #   Author:   John Harrison
-#   Revision: 20 Jun 2003 4.0
-#             19 Jul 2003 4.1
-#             22 Nov 2004 4.2 Add die messages, verbose flag & tick.
-#             06 Jun 2011 4.3 Protect filenames in open & die messages
-#             15 Aug 2011 4.4 Add -n, quit, usage, Getopt:Long -> Getopt::Std
-#             05 Sep 2011 4.5 Add -r (so use File::Find instead of readdir)
-#                             Add -k & -o
-#
-#   4.0 was the fourth major re-write.
-#   The previous versions were all shell scripts.
-#   This one goes like lightning compared to them!
-#   It uses md5sum to compare any files it finds which are
-#   the same size and which have different inode numbers.
+#   History: See 'perldoc thin-dup'
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 use strict;
-use Getopt::Std;
+use Getopt::Long;
 use Digest::MD5 qw(md5_hex);
 use Time::localtime;
 use POSIX qw(:termios_h);
 use File::Find ();
+use Pod::Usage;
 
 #
 # Do magic to read a single key with no <return>
@@ -70,20 +56,20 @@ my (%sizes, %inodes, %files, %info, %digests, %copies, %duplicates);
 sub usage () {
 
 die <<EOT;
-Usage: $my_name [-r] [-f|y|n] [-v] [-t] [-h|u] [-o PATHS] [-k PATHS]
-  -r - Recurse into subdirectories
-  -k - Keep these files (requires argument)
-  -o - Other paths to include (outside this directory)
-  -y - Yes, remove
-  -f - Force remove (same as yes)
-  -n - No, don't remove
-  -v - Verbose progress
-  -t - Show ticker
-  -h - Help (show usage)
-  -u - Usage
+Usage: $my_name OPTIONS
+where:
 
-NB:
-  -o must come BEFORE -k on the command line if using both options
+  -r | --recursive - Recurse into subdirectories
+  -y | --yes       - Yes, remove
+  -n | --no        - No, don't remove (just show groups of matches)
+  -i | --include   - Other paths to include (outside this directory)
+  -k | --keep      - Keep specified files (requires list of files)
+
+NB: Options -i & -k require a list of files/paths
+
+See 'perldoc thin-dup'
+( or: perl -MPod::Perldoc -e '(Pod::Perldoc->run());' thin-dup )
+for more details and other options...
 
 EOT
 
@@ -101,17 +87,42 @@ $| = 1;
 #
 # Process command line arguments
 #
+my (@include, @keep);
 my %opts;
-getopts('rkfyntvuho:', \%opts) || usage;
+
+GetOptions(
+    'recursive'  => \$opts{r},
+    'r'  => \$opts{r},
+    'include=s{,}' => \@include,
+    'i=s{,}' => \@include,
+    'keep=s{,}' => \@keep,
+    'k=s{,}' => \@keep,
+    'yes'  => \$opts{f},
+    'y'  => \$opts{f},
+    'force'  => \$opts{f},
+    'f'  => \$opts{f},
+    'no'  => \$opts{n},
+    'n'  => \$opts{n},
+    'verbose'  => \$opts{v},
+    'v'  => \$opts{v},
+    'tick'  => \$opts{t},
+    'help'  => \$opts{u},
+    'usage'  => \$opts{u},
+    'h'  => \$opts{u},
+    'u'  => \$opts{u},
+    'man'  => \$opts{m},
+    );
 
 $opts{f} = 1 if $opts{y};
 $opts{u} = 1 if $opts{h};
 usage if $opts{u};
+pod2usage(1) if $opts{m};
 
 my %keep;
-if ( $opts{k} ) {
+if ( $#keep > -1 ) {
 
-    %keep = map { $_ => 1 } grep {(-e $_ )} @ARGV;
+    # %keep = map { $_ => 1 } grep {(-e $_ )} @keep;
+    $keep{$_} = 1 for grep {(-e $_)} @keep;
 
     print "Keep: ", join " ", keys %keep, $/;
 
@@ -132,18 +143,17 @@ sub wanted {
 }
 
 my %entries = map { $_ => 1 } grep {(-e $_ )} glob ".* *";
-delete $entries{'.'};
-delete $entries{'..'};
-if ( $opts{o} ) {
+if ( $#include > -1 ) {
 
-    # my %other = map { $_ => 1 } grep {(-e $_ )} glob $opts{o};
-    # $entries{$_} = $other{$_} for keys %other;
-    # $entries{$_} = 1 for grep {(-e $_ )} glob $opts{o};
-    $entries{$_} = 1 for grep {(-e $_ )} $opts{o};
-    use Data::Dumper;
-    print Dumper \%entries;
+    $entries{$_} = 1 for grep {(-e $_ )} @include;
 
 }
+
+#
+# We don't want to go walking off up through our parent
+#
+delete $entries{'.'};
+delete $entries{'..'};
 
 File::Find::find({wanted => \&wanted}, sort keys %entries);
 
@@ -237,7 +247,7 @@ for my $digest (@digests) {
 
                 $key = "n";
 
-            }elsif ($opts{f}) {
+            } elsif ($opts{f}) {
 
                 $key = "y";
 
@@ -287,4 +297,134 @@ for my $digest (@digests) {
     }
 
 }
+
+=head1 NAME
+
+thin-dup - Interactively remove duplicate files
+
+=head1 SYNOPSIS
+
+B<thin-dup> S<[ B<-v> ]> S<[ B<-n> ]> S<[ B<-f> ]> I<perlexpr> S<[ I<files> ]>
+
+ Usage: thin-dup OPTIONS
+ where:
+   -r | --recursive - Recurse into subdirectories
+   -y | --yes       - Yes, remove
+   -n | --no        - No, don't remove (just show groups of matches)
+   -i | --include   - Other paths to include (outside this directory)
+   -k | --keep      - Keep specified files (requires list of files)
+
+ NB: Options -i & -k require a list of files/paths
+
+=head1 DESCRIPTION
+
+C<thin-dup>
+Finds duplicate files and asks (unless yes/force option is specified)
+for each one whether it should be removed.
+
+By default it will just process the files in the current directory,
+without descending into subdirectories.
+
+The optional I<--include> and I<--keep> options both require arguments
+of a list of files. C<--include> specifies a list of file (or directories)
+to also check for duplicate copies in addition to the current directory
+(and subdirectories if I<--recursive> is specified)
+
+I<NB:> If I<--recursive> is specified, it will act both on the current
+directory, and any directories matching the path specified in the
+I<--include> option.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-r>, B<--recursive>
+
+Descend into the subdirectories under this directory
+(and any I<--include>d directories) and sum those files too.
+
+=item B<-y>, B<--yes>, B<-f>, B<--force>
+
+Answer all questions 'Yes', i.e. remove all but one file in a group of
+matching files.
+
+NB: By default (i.e. unless a specific copy is protected using the
+I<--keep> option) only the lexically last file of a list of duplicate
+files will be kept. Therefore, you will quite probably want to use the
+I<-k> or I<--keep> option to specify which particular cop(y|ies) of
+the file you want to keep.
+
+( I<-f> or I<--force> is the same as I<--yes> )
+
+=item B<-n>, B<--no>
+
+Answer all questions 'No', i.e. don't remove ANY files.
+
+This may not seem particularly useful, but it's great if you have a
+number of identical copies of several different files and want to know
+which groups of files are the same as each other.
+
+i.e. You've copied in a config file from 50 different machines, and
+need to see which machines have which version.
+
+=item B<-i> B<--include> B<PATHS>
+
+Other paths to include (outside this directory)
+
+(This option requires an argument of a list of files or paths)
+
+=item B<-k> B<--keep> B<PATHS>
+
+Files to keep
+
+(This option requires an argument of a list of files or paths)
+
+=item B<-v>, B<--verbose>
+
+Show verbose progress by printing the name of each file as it is summed.
+
+=item B<-t>, B<--tick>
+
+Show a ticker (i.e. | / - \ rotating ) if you've got a large list of
+small files to process, so you can see it's still working.
+
+=item B<-h>, B<--help>, B<-u>, B<--usage>
+
+Show a brief usage summary with the most useful options and
+recommend reading perldoc for more detailed information.
+
+=back
+
+=head1 EXAMPLES
+
+To check all files in this directory against files in the
+directory ../test use:
+
+	thin-dup --include ../test
+
+To check all files in directories under this one, use:
+
+	thin-dup --recursive
+
+To non-interactively remove all duplicate files in sub directories,
+but not the copies in this directory, use:
+
+        thin-dup --recursive --yes --keep *
+
+=head1 REVISION HISTORY
+
+ 20 Jun 2003 4.0 The fourth major re-write.
+     The previous versions were all shell scripts.
+     Now it goes like lightning compared to them!
+     It uses md5sum to compare any files it finds which are
+     the same size and which have different inode numbers.
+ 19 Jul 2003 4.1
+ 22 Nov 2004 4.2 Add die messages, verbose flag & tick.
+ 06 Jun 2011 4.3 Protect filenames in open & die messages
+ 15 Aug 2011 4.4 Add -n, quit, usage, Getopt:Long -> Getopt::Std
+ 05 Sep 2011 4.5 Add -r (so use File::Find instead of readdir). Add -k & -o
+ 06 Sep 2011 5.0 Back to Getopt::Long for command line robustness
+     Add documentation.
+
+=head1 ENVIRONMENT
 

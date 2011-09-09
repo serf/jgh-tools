@@ -49,7 +49,7 @@ sub readkey {
 
 END { cooked() }
 
-my (@files, @digests);
+my (@digests);
 my (%sizes, %inodes, %files, %info, %digests, %copies, %duplicates);
 (my $my_name = $0) =~ s:^.*/::g;
 
@@ -121,7 +121,6 @@ pod2usage(1) if $opts{m};
 my %keep;
 if ( $#keep > -1 ) {
 
-    # %keep = map { $_ => 1 } grep {(-e $_ )} @keep;
     $keep{$_} = 1 for grep {(-e $_)} @keep;
 
     print "Keep: ", join " ", keys %keep, $/;
@@ -136,9 +135,10 @@ use vars qw/*name *dir *prune/;
 *dir    = *File::Find::dir;
 *prune  = *File::Find::prune;
 
+my %found;
 sub wanted {
 
-    ( $opts{r} || ( $File::Find::prune = 1 ) ) && push (@files, $name);
+    ( $opts{r} || ( $File::Find::prune = 1 ) ) && ( $found{$name} = 1 );
 
 }
 
@@ -155,12 +155,21 @@ if ( $#include > -1 ) {
 delete $entries{'.'};
 delete $entries{'..'};
 
+my %to_sum;
 File::Find::find({wanted => \&wanted}, sort keys %entries);
+$to_sum{$_} = 1 for keys %found;
+%found = ();
+
+if ( $#keep > -1 ) {
+    File::Find::find({wanted => \&wanted}, sort keys %keep);
+    $keep{$_} = 1 for keys %found;
+    %found = ();
+}
 
 #
 # Collect info about the list of files we've built
 #
-for my $file (@files) {
+for my $file (sort keys %to_sum) {
 
     $file =~ s|^\./||;
     next if (-l $file ); # skip symlinks
@@ -233,7 +242,7 @@ for my $digest (@digests) {
 
             my $file = $duplicates{$digest}{$i};
             push (@duplicates, $file);
-            print "$info{$file} $file\n";
+            print "$info{$file} $file\n" if $file;
 
         }
 

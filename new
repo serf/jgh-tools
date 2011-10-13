@@ -73,7 +73,7 @@ if ( $f ) {
     #
     if ( $d ) {
 
-        $file_path = '"$some_dir/$file"';
+        $file_path = '$some_dir/$file';
 
     }
     else {
@@ -84,13 +84,13 @@ if ( $f ) {
 
     if ( $o ) {
 
-        $file = sprintf qq~\nopen (FILE, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
+        $file = sprintf qq~\nopen (FILE, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <FILE>)) {\n\n    #\n\n}\nclose FILE;\n\n";
 
     }
     else {
 
-        $file = sprintf qq~\nopen (my \$file_fh, $file_path) || die "Can't read '$file_path': \$!\\n";\n~ .
+        $file = sprintf qq~\nopen (my \$file_fh, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <\$file_fh>)) {\n\n    #\n\n}\nclose \$file_fh;\n\n";
 
     }

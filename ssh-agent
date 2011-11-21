@@ -33,13 +33,22 @@ do
     export SSH_AGENT_PID;
     export SSH_AUTH_SOCK;
 
+    if [[ $1 = "-v" ]]
+    then
+        echo "SOCK_PID=${SOCK_PID}"
+        echo "SSH_AGENT_PID=${SSH_AGENT_PID}"
+    fi
+
     $SSH_ADD -l > /dev/null 2>&1
     if [ $? = 0 ]
     then
         #
         # 2048 af:b2:7a:6e:a3:df:18:78:ad:25:07:9b:c4:ff:01:58 /u/harrij/.ssh/id_rsa (RSA)
         #
-        echo "Using agent ${SSH_AGENT_PID}"
+        if [[ ! "$1" = "-v" ]]
+        then
+            echo "Using agent ${SSH_AGENT_PID}"
+        fi
         break
     elif [ $? = 1 ]
     then
@@ -64,4 +73,5 @@ do
     GOT_AGENT=0
 
 done
+
 

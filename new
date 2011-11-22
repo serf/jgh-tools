@@ -7,10 +7,11 @@ my $indent = 0;
 
 if ( $u ) {
     print <<EOT;
-Usage: $0 [-h] [-d] [-f] [-o] [-u]
+Usage: $0 [-h] [-d] [-f] [-c] [-o] [-u]
   where:
       -d = code for reading a directory (from perldoc -f readdir)
       -f = code for reading a file.
+      -c = specify file on command line
       -h = skip header (hash bang, warnings & strictness pragmas)
            (i.e. just generate inline snippet)
       -o = Use old (pre 5.6) Perl syntax TYPEGLOB & -w flag
@@ -101,6 +102,14 @@ if ( $f ) {
         $file =~ s/\n(.)/\n$ind$1/g;
 
         print 'for my $file ( @files ) {', "\n$file}\n";
+
+    }
+    elsif ( $c ) {
+
+        print q~my $file = shift;~, $/,
+            q~die "Usage: $0 FILE\n" if ! $file;~, $/;
+
+        print $file;
 
     }
     else {

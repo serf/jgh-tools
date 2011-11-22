@@ -42,6 +42,7 @@ my %opts = (
    e => 0,
    s => ' ',
 );
+my $sep = '\s+';
 
 for my $argv ( @ARGV ) {
 
@@ -122,6 +123,11 @@ for my $argv ( @ARGV ) {
             push @args, $chunk;
 
         }
+        elsif ( $chunk =~ /^-f(.*)$/ ) {
+
+            $sep = $1;
+
+        }
         else {
 
            die "$0: Arg '$chunk' isn't an integer.\n";
@@ -135,7 +141,7 @@ for my $argv ( @ARGV ) {
 while ( <STDIN> ) {
 
     chomp;
-    my @line = split(/\s+/, $_);
+    my @line = split(/$sep/, $_);
     my @out;
 
     for my $arg (@args) {

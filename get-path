@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# John Harrison
+#
+# Validate your path & add any required directories
+# This uses only intrinsic bash commands
+# so will still work if you've lost your path :-)
+# invoke with PATH=$(/path/to/get-path)
+#
+unset NPATH
+for PATHRC in ~/.pathrc $RC_DIR/.pathrc /usr/local/lib/initfiles/system-pathrc
+do
+    if [[ -r $PATHRC ]]
+    then
+        break
+    fi
+done
+
+for DIR in $(while read DIR; do echo $DIR; done < $PATHRC; echo ${PATH//:/ })
+do
+     DIR=$(eval echo ${DIR%%/})
+     if [[ -d "$DIR" ]]
+     then
+         if [[ "${NPATH/:${DIR}:/}" = "$NPATH" ]]
+         then
+             NPATH="$NPATH:$DIR:"
+             NPATH=${NPATH//\/:/:/}
+         fi
+     fi
+done
+
+NPATH=${NPATH//::/:};NPATH=${NPATH%/};NPATH=${NPATH#:};NPATH=${NPATH%:};
+PATH=$NPATH
+
+if [[ "$1" = "-e" ]]
+then
+    echo $NPATH
+fi
+

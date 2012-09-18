@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+use Getopt::Std;
+
+my $gen_len = 10; # Generated password length
+my $crypted_pass = "*LK*";
+my $plaintext;
+my %opts; my $opts = \%opts;
+
+getopts('sl:cvrmnh', $opts);
+
+die <<EOT if $opts->{h};
+Usage: $0 [opts]
+ -s - Strong password (15 characters, full printable ASCII set)
+ -l - Length (requires the number of characters as an argument)
+ -c - Show MD5 crypted pass as well
+ -v - Verbose (show description of output)
+ -r - Also show the range of possible characters
+ -m - Medium password (Add a few non-alphanumeric characters)
+ -n - Show the range with character numbers
+ -h - Show this help screen
+
+EOT
+
+my @schars = ('a'..'z','A'..'Z',0..9,'.','/');
+my $salt = '';
+for (1..8) {
+    $salt .= $schars[int(rand($#schars))];
+}
+
+my @range = (50..57, 65..78, 80..90, 97..107, 109..122);
+
+push ( @range, 35, 37, 43, 45, 46, 47, 58, 61, 64, 95 ) if $opts->{m};
+
+if ( $opts->{s} ) {
+
+    $gen_len = 15;
+    @range = (32 .. 126);
+
+}
+
+my @chars;
+for my $char (@range) {
+    push @chars, chr($char);
+}
+
+if ( $opts->{l} ) {
+    $gen_len = $opts->{l};
+}
+
+for (1..$gen_len) {
+    $plaintext .= $chars[int(rand($#chars))];
+}
+
+print "New password: " if $opts->{v};
+
+print "$plaintext\n";
+
+if ( $opts->{c} ) {
+
+    print "Crypted pass: " if $opts->{v};
+    $crypted_pass = crypt($plaintext,'$1$' . $salt )
+        or die($!);
+
+    print "$crypted_pass\n";
+
+}
+
+if ( $opts->{n} ) {
+    for my $i ( @range ) {
+        print "$i ", chr($i), $/;
+    }
+}
+
+if ( $opts->{r} ) {
+    for my $i ( @range ) {
+        print chr($i);
+    }
+    print $/;
+}
+

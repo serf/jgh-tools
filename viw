@@ -15,5 +15,12 @@ then
     EDITOR=/usr/bin/vim
 fi
 
-${EDITOR} $(which $@)
+COMMAND=$(which $@)
+
+if [[ -f ${COMMAND} ]]
+then
+    ${EDITOR} ${COMMAND}
+else
+    echo ${COMMAND}
+fi
 

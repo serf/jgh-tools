@@ -7,6 +7,9 @@
 #  and/or modify it under the same terms as Perl itself.
 #
 # $Log: backup,v $
+# Revision 1.9  2012/07/20  13:55:00 jgh
+# Fix bug with file in a directory with a . in its name.
+#
 # Revision 1.8  2011/02/01  19:30:00 jgh
 # Added code to cope with ./file and ../file
 #
@@ -54,7 +57,7 @@ Getopt::Long::Configure('bundling');
 my ($do_cp, $no_ext, $force, $do_mv, $no_act, $tilde, $usage, $verbose);
 
 die "Usage: $0 [-cefmntuv] [filenames]\n"
-    unless GetOptions(
+    if ! GetOptions(
         'c|cp|copy'    => \$do_cp,
         'e|ext'        => \$no_ext,
         'f|force'      => \$force,
@@ -79,8 +82,10 @@ EOT
 
 $verbose++ if $no_act;
 
+sub VERBOSE { $verbose }
+
 if (!@ARGV) {
-    print "reading filenames from STDIN\n" if $verbose;
+    VERBOSE && print "reading filenames from STDIN\n";
     @ARGV = <STDIN>;
     chop(@ARGV);
 }
@@ -104,7 +109,7 @@ FILE: for (@ARGV) {
 
     my $file = $_;
 
-    die "$0: File `$file' does not exist.\n" unless(-e "$file");
+    die "$0: File `$file' does not exist.\n" if ! -e $file;
 
     my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
         $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
@@ -159,7 +164,7 @@ FILE: for (@ARGV) {
         $new_name = $file;
 
     }
-    elsif ( $file =~ /.*\.([^\.]+)$/ ) {
+    elsif ( $file =~ m%.*\.([^\./]+)$% ) {
 
         $new_ext = ".$1";
         ($new_name = $file) =~ s/$new_ext$//g;
@@ -189,19 +194,19 @@ FILE: for (@ARGV) {
 
         if ( $do_mv ) {
 
-            print "`$file' -> `$target'\n" if $verbose;
+            VERBOSE && print "`$file' -> `$target'\n";
 
         }
         elsif ( -d $file ) {
 
-            warn "$0: Directory `$file' not renamed: do manual 'cp -rp $file $target'\n"
-                if $verbose;
+            VERBOSE &&
+                warn "$0: Directory `$file' not renamed: do manual 'cp -rp $file $target'\n";
             next FILE;
 
         }
         else {
 
-            print "`$file' -> `$file' + `$target'\n" if $verbose;
+            VERBOSE && print "`$file' -> `$file' + `$target'\n";
 
         }
 
@@ -210,13 +215,13 @@ FILE: for (@ARGV) {
 
         if ( $do_mv and move("$file", "$target") ) {
 
-            print "`$file' -> `$target'\n" if $verbose;
+            VERBOSE && print "`$file' -> `$target'\n";
 
         }
         elsif ( -d $file ) {
 
-            warn "$0: Directory `$file' not renamed: do manual 'cp -rp $file $target'\n"
-                if $verbose;
+            VERBOSE &&
+                warn "$0: Directory `$file' not renamed: do manual 'cp -rp $file $target'\n";
             next FILE;
 
         }
@@ -226,7 +231,7 @@ FILE: for (@ARGV) {
 
             if ( utime($atime,$mtime,$target) ) {
 
-                print "`$file' -> `$file' + `$target'\n" if $verbose;
+                VERBOSE && print "`$file' -> `$file' + `$target'\n";
 
             }
             else {

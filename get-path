@@ -8,10 +8,11 @@
 # invoke with PATH=$(/path/to/get-path)
 #
 unset NPATH
-for PATHRC in ~/.pathrc $RC_DIR/.pathrc /usr/local/lib/initfiles/system-pathrc
+for PATHRC in $HOME/.pathrc $RC_DIR/.pathrc /usr/local/lib/initfiles/system-pathrc
 do
     if [[ -r $PATHRC ]]
     then
+        # echo $PATHRC
         break
     fi
 done
@@ -25,6 +26,7 @@ do
          then
              NPATH="$NPATH:$DIR:"
              NPATH=${NPATH//\/:/:/}
+             NPATH=${NPATH//\/\//\/}
          fi
      fi
 done

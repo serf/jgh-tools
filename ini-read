@@ -1,0 +1,155 @@
+#!/usr/bin/perl
+#
+# John Harrison
+#
+use warnings;
+use strict;
+use Getopt::Long;
+use Data::Dumper;
+my $opt;
+
+# my $opt = ();
+# GetOptions (\%h, 'length=i');       # will store in $h{length}
+
+my $result = GetOptions (
+    "list_sections|sections|ls" => \$opt->{sections},
+    "list|l"                    => \$opt->{list},
+    "dump|d"                    => \$opt->{dump},
+    "file|ini|f|i=s"            => \$opt->{f},
+    "section|sect|s=s"          => \$opt->{sect},
+    "parameter|param|parm|p=s"  => \$opt->{parm},
+    "help|usage|h|u|?"          => \$opt->{u},
+    
+);
+
+my $cfg;
+$cfg->{comment_char} = '#';
+my $do;
+
+sub show_usage {
+
+print STDERR <<EOT;
+Usage: $0 -f INI_FILE -s SECTION -p PARAMETER
+   or: $0 -f INI_FILE -sections (-ls)
+   or: $0 -f INI_FILE -list     (-l)
+   or: $0 -f INI_FILE -dump     (-d)
+   or: $0 -?
+EOT
+
+exit 1;
+
+}
+
+sub ic ($$) {
+    my ($a, $b) = (shift,shift);
+    {lc $a cmp lc $b}
+}
+
+show_usage if $opt->{u};
+die "Try: '$0 -?' for help.\n" if ! $opt->{f};
+die "Invalid option specification. Try '$0 -?' for help.\n" if ! $result;
+
+my $sect = '*** GLOBAL CONFIG ***';
+my $parm;
+
+open (my $file_fh, $opt->{f}) || die "Can't read '$opt->{f}': $!\n";
+while (defined (my $line = <$file_fh>)) {
+
+    next if $line =~ /^$cfg->{comment_char}/;
+
+    if ( $line =~ /^\[([^]]+)\]\s+$/ ) {
+        $sect = $1;
+        $cfg->{sects}->{$sect} = undef;
+    }
+    elsif ( $line =~ /^\s*([^=]+?)\s*=\s*(.*?)\s*$/ ) {
+        $parm = $1;
+        $cfg->{data}->{$sect}->{$parm} = $2;
+        $cfg->{parms}->{$sect}->{$parm} = undef;
+    }
+
+}
+close $file_fh;
+
+if ( defined $opt->{sections} ) {
+
+    for my $sect ( sort ic keys %{$cfg->{sects}} ) {
+
+        print "$sect\n";
+
+    }
+
+}
+elsif ( defined $opt->{list} ) {
+
+    for my $sect ( sort ic keys %{$cfg->{sects}} ) {
+
+        for my $parm ( keys %{$cfg->{parms}->{$sect}} ) {
+
+            print "$sect:$parm:$cfg->{data}->{$sect}->{$parm}\n";
+
+        }
+
+    }
+    exit 0;
+
+}
+elsif ( defined $opt->{sect} ) {
+
+    if ( defined $cfg->{data}->{$opt->{sect}} ) {
+
+        if ( defined $opt->{dump} ) {
+
+            if ( defined $cfg->{data}->{$opt->{sect}} ) {
+
+                {
+                    local $Data::Dumper::Terse = 1;
+                    print Data::Dumper->Dump([{$opt->{sect},
+                        $cfg->{data}->{$opt->{sect}}}]);
+                }
+                exit 0;
+            }
+
+        }
+        elsif ( ! defined $opt->{parm} ) {
+
+            for my $parm ( keys %{$cfg->{parms}->{$opt->{sect}}} ) {
+
+                print "$opt->{sect}:$parm:$cfg->{data}->{$opt->{sect}}->{$parm}\n";
+
+            }
+
+        }
+        elsif ( defined $cfg->{data}->{$opt->{sect}}->{$opt->{parm}} ) {
+
+            print "$cfg->{data}->{$opt->{sect}}->{$opt->{parm}}\n";
+
+        }
+        else {
+
+            die "Can't find parameter '$opt->{parm}' in section '$opt->{sect}' of '$opt->{f}'\n";
+
+        }
+
+    } else {
+
+        die "Can't find section '$opt->{sect}' in '$opt->{f}'\n";
+
+    }
+
+}
+elsif ( defined $opt->{dump} ) {
+
+    {
+        local $Data::Dumper::Terse = 1;
+        print Data::Dumper->Dump([{'INI_FILE', $cfg}]);
+    }
+    exit 0;
+
+}
+else {
+
+    die "ERROR: You must specify one of [-s|-ls|-l|-d|-?] options.\n"
+        if ! defined $opt->{sect};
+
+}
+

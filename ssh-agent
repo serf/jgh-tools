@@ -11,6 +11,10 @@ if [ -x /usr/bin/ssh-agent ]
 then
     SSH_AGENT=/usr/bin/ssh-agent
     SSH_ADD=/usr/bin/ssh-add
+elif [ -x /usr/local/bin/ssh-agent ]
+then
+    SSH_AGENT=/usr/local/bin/ssh-agent
+    SSH_ADD=/usr/local/bin/ssh-add
 else
     echo "Can't find ssh-agent"
     SSH_AGENT=/bin/false

@@ -84,11 +84,52 @@ for my $link (@links) {
 # delete $pkgs->{'git-core-debuginfo'};
 # delete $pkgs->{'perl-Email-Valid'};
 
+#
+# From
+# http://cpansearch.perl.org/src/EDAVIS/Sort-Versions-1.5/Versions.pm
+#
+sub versioncmp( $$ ) {
+
+    my @A = ($_[0] =~ /([-.]|\d+|[^-.\d]+)/g);
+    my @B = ($_[1] =~ /([-.]|\d+|[^-.\d]+)/g);
+
+    my ($A, $B);
+    while (@A and @B) {
+	$A = shift @A;
+	$B = shift @B;
+	if ($A eq '-' and $B eq '-') {
+	    next;
+	} elsif ( $A eq '-' ) {
+	    return -1;
+	} elsif ( $B eq '-') {
+	    return 1;
+	} elsif ($A eq '.' and $B eq '.') {
+	    next;
+	} elsif ( $A eq '.' ) {
+	    return -1;
+	} elsif ( $B eq '.' ) {
+	    return 1;
+	} elsif ($A =~ /^\d+$/ and $B =~ /^\d+$/) {
+	    if ($A =~ /^0/ || $B =~ /^0/) {
+		return $A cmp $B if $A cmp $B;
+	    } else {
+		return $A <=> $B if $A <=> $B;
+	    }
+	} else {
+	    $A = uc $A;
+	    $B = uc $B;
+	    return $A cmp $B if $A cmp $B;
+	}	
+    }
+    @A <=> @B;
+}
+
+
 for my $pkg ( keys %$pkgs ) {
 
     print "# $pkg\n" if $n;
 
-    my @pkgs = (sort keys %{$pkgs->{$pkg}} );
+    my @pkgs = (sort versioncmp keys %{$pkgs->{$pkg}} );
 
     print $pkgs->{$pkg}->{$pkgs[-1]}, $/;
 

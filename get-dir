@@ -8,7 +8,15 @@ use strict;
 
 my $search = shift;
 
-my $dirs_file = "$ENV{HOME}/.dirs";
+my @dirs_files;
+
+push @dirs_files, $ENV{DIRS_FILE} if defined $ENV{DIRS_FILE};
+
+for my $dirs_file ( "$ENV{HOME}/.dirs" ) {
+    if ( -r $dirs_file ) {
+        push @dirs_files, $dirs_file;
+    }
+}
 
 my %dirs;
 
@@ -22,18 +30,23 @@ for my $var ( keys %ENV ) {
 }
 
 my $len = 0;
-if ( -r $dirs_file ) {
-    open (DIRS, $dirs_file) || die "Can't read '$dirs_file': $!\n";
-    while (<DIRS>) {
-        chomp;
-        next unless /:/;
-        my ($alias,$dir) = split(/:/, $_);
-        $alias = lc($alias);
-        my $length = length $alias;
-        $len = $length+1 if $length >= $len;
-        $dirs{$alias} = $dir;
+
+for my $dirs_file ( @dirs_files ) {
+
+    if ( -r $dirs_file ) {
+        open (DIRS, $dirs_file) || die "Can't read '$dirs_file': $!\n";
+        while (<DIRS>) {
+            chomp;
+            next unless /:/;
+            my ($alias,$dir) = split(/:/, $_);
+            $alias = lc($alias);
+            my $length = length $alias;
+            $len = $length+1 if $length >= $len;
+            $dirs{$alias} = $dir;
+        }
+        close DIRS;
     }
-    close DIRS;
+
 }
 
 sub by_dir {

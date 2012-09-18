@@ -1,4 +1,19 @@
 #!/bin/bash
+#
+# viw - edit script in your path
+# John Harrison
+#
+# You may want to add:
+# complete -v viw
+# to your .rc files
+#
 
-vi $(which $@)
+EDITOR=/usr/bin/vi
+
+if [[ -x /usr/bin/vim ]]
+then
+    EDITOR=/usr/bin/vim
+fi
+
+${EDITOR} $(which $@)
 

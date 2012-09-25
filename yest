@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+
+my ($year,$mon,$day) = (localtime(time - 86400))[5,4,3];
+printf "%4d%02d%02d\n", $year + 1900, $mon + 1, $day;
+

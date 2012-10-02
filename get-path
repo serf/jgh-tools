@@ -20,9 +20,9 @@ done
 for DIR in $(while read DIR; do echo $DIR; done < $PATHRC; echo ${PATH//:/ })
 do
      DIR=$(eval echo ${DIR%%/})
-     if [[ -d "$DIR" ]]
+     if [[ "${NPATH/:${DIR}:/}" = "$NPATH" ]]
      then
-         if [[ "${NPATH/:${DIR}:/}" = "$NPATH" ]]
+         if [[ -d "$DIR" ]]
          then
              NPATH="$NPATH:$DIR:"
              NPATH=${NPATH//\/:/:/}

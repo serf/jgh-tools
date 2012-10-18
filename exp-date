@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+#
+# Calculate shadow file expiry date
+# See http://www.cyberciti.biz/faq/understanding-etcshadow-file/
+#
+
+use warnings;
+use strict;
+
+my $days = shift;
+
+if ( $days && $days =~ /^\d+$/ ) {
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+        = gmtime( $days * 86400 );
+
+    printf "%4d-%02d-%02d\n", $year + 1900, $mon + 1, $mday;
+
+} else {
+
+    printf "%d\n", time / 86400;
+    exit;
+
+}
+

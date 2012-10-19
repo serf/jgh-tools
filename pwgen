@@ -23,7 +23,16 @@ Usage: $0 [opts]
 
 EOT
 
-my @schars = ('a'..'z','A'..'Z',0..9,'.','/');
+my $range;
+@{$range->{a}} = ('a'..'z'); # 97-122
+@{$range->{A}} = ('A'..'Z'); # 65-90
+@{$range->{n}} = (0..9); # 48-57
+
+my @salt = ('.','/');
+my @ranges = ('a', 'A', 'n'); # Ranges to use for validation
+
+my @schars = (@{$range->{a}}, @{$range->{A}}, @{$range->{n}}, @salt);
+
 my $salt = '';
 for (1..8) {
     $salt .= $schars[int(rand($#schars))];
@@ -31,12 +40,28 @@ for (1..8) {
 
 my @range = (50..57, 65..78, 80..90, 97..107, 109..122);
 
-push ( @range, 35, 37, 43, 45, 46, 47, 58, 61, 64, 95 ) if $opts->{m};
+if ( $opts->{m} ) {
 
+    $gen_len = 12;
+    my @med = ( 35, 37, 43, 45, 46, 47, 58, 61, 64, 95 );
+    push ( @range, @med );
+    for my $m ( @med ) {
+        push @{$range->{m}}, chr($m);
+    }
+    push ( @ranges, 'm' ); # Also validate medium complexity characters
+
+}
+
+# Strong password
 if ( $opts->{s} ) {
 
     $gen_len = 15;
+    my @punc = (32..47,58..64,91..96,123..126);
     @range = (32 .. 126);
+    for my $p ( @punc ) {
+        push @{$range->{p}}, chr($p);
+    }
+    push ( @ranges, 'p' ); # Also validate punctuation characters
 
 }
 
@@ -49,9 +74,49 @@ if ( $opts->{l} ) {
     $gen_len = $opts->{l};
 }
 
-for (1..$gen_len) {
-    $plaintext .= $chars[int(rand($#chars))];
+sub gen_ck ();
+
+sub gen_ck () {
+
+    for (1..$gen_len) {
+        $plaintext .= $chars[int(rand($#chars))];
+    }
+    my @plaintext = split(//, $plaintext );
+
+    my $ok;
+
+    RANGE: for my $r ( @ranges ) {
+
+        $ok->{$r} = 0;
+
+        for my $chr ( @{$range->{$r}} ) {
+
+            for my $place ( @plaintext ) {
+
+                if ( $place eq $chr ) {
+                    $ok->{$r} = 1;
+                    next RANGE;
+                }
+
+            }
+
+        }
+
+        if ( ! $ok->{$r} ) {
+
+            #
+            # Recurse if our password doesn't have one of each set
+            #
+            undef $plaintext;
+            gen_ck();
+
+        }
+
+    }
+
 }
+
+gen_ck;
 
 print "New password: " if $opts->{v};
 

@@ -4,17 +4,25 @@
 # By John
 #
 
-our $d;
+our ($d,$s);
 my $base = 'H';
 if ( $d ) {
     $base = 'C';
 }
 
 while (<>){
-	chomp();
-	for $char (split(//,$_)) {
-		printf "%%%s", unpack("$base*",$char);
-	}
-	print "\n";
+    chomp();
+    for $char (split(//,$_)) {
+        if ( $s ) {
+            if ( $char =~ /^[^\w\.\:\/]$/ ) {
+                printf "%%%s", unpack("$base*",$char);
+            } else {
+                print $char;
+            }
+        } else {
+            printf "%%%s", unpack("$base*",$char);
+        }
+    }
+    print $/;
 }
 

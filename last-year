@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+#
+# Passed the output of finger, in the format:
+#
+# Login name: john  			In real life: John Harrison
+# Directory: /home/john           	Shell: /bin/bash
+# Last login Fri Jan  4 14:29 on pts/2 from localhost
+# No unread mail
+# No Plan.
+#
+# It will work out what year (since 2000) that day could have been.
+#
+use warnings;
+use strict;
+
+my $file = shift;
+die "Usage: $0 FILE\n" if ! $file;
+
+my $cal = '/bin/cal';
+
+my ($sec,$min,$hour,$mday,$mon,$this_year,$wday,$yday,$isdst)
+    = gmtime(time);
+my @years = ( 2000 .. $this_year + 1900 );
+my @day  = qw( Sun Mon Tue Wed Thu Fri Sat );
+
+my @mon  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my %mon; @mon{@mon} = (1..12);
+my %dow; @dow{@day} = (0..6);
+
+sub cal_mon ($$$$) {
+
+    my ($year, $mon, $day, $dom) = (shift, shift, shift, shift);
+
+    open (my $cal_fh, "$cal $mon{$mon} $year|") || die "Can't run '$cal $mon{mon} $year': $!\n";
+    while (defined (my $line = <$cal_fh>)) {
+
+        #
+        chomp $line;
+        next if $line =~ /[^ \d]/;
+        my @days = ( $line =~ /.{1,3}/gs );
+
+        my $found = $days[$dow{$day}];
+        next if ! $found;
+        next if $found !~ /\d+/;
+
+        if ( $found == $dom ) {
+            print "$year\n";
+        }
+
+    }
+    close $cal_fh;
+
+}
+
+my $last;
+open (my $file_fh, "$file") || die "Can't read '$file': $!\n";
+while (defined (my $line = <$file_fh>)) {
+
+    #
+    if ( $line =~ /^On since/ ) {
+        die $line;
+    }
+
+    next if $line !~ /log/;
+    $last = $line;
+    last;
+
+}
+close $file_fh;
+
+chomp $last;
+
+if ( $last =~ /Last login (.*) \d+:\d+ on .* from/ ) {
+
+    print "$last\n";
+
+    my ( $day, $mon, $dom ) = split(/\s+/, $1);
+
+    for my $yr ( reverse @years ) {
+        cal_mon( $yr, $mon, $day, $dom );
+    }
+
+} elsif ( $last =~ /Last login (.*), \d{4} on/ ) {
+
+    print "$last\n";
+    exit;
+
+} else {
+
+    die "I don't recognize this line: '$last'\n";
+
+}
+

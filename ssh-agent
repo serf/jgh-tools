@@ -21,66 +21,141 @@ else
     SSH_ADD=/bin/false
 fi
 
-ps -fu$LOGNAME|grep "ssh-agent$" > /dev/null
-if [ $? != 0 ]
-then
-    eval $($SSH_AGENT)
-fi
+SSH_USE_FORWARDED=0
+case "$1" in
+"-f" )
+    SSH_VERB=2
+    SSH_USE_FORWARDED=1
+    ;;
+"-v" )
+    SSH_VERB=1
+    ;;
+"-vv" )
+    SSH_VERB=2
+    ;;
+* )
+    SSH_VERB=0
+    ;;
+esac
 
-for SSH_AUTH_SOCK in $(find /tmp/ssh-???*[0-9]* -type s -user ${LOGNAME} -name "agent.[0-9]*" 2>/dev/null)
+set -u
+
+if [ $SSH_USE_FORWARDED -ne 1 ]
+then
+    ps -fu$LOGNAME|grep "ssh-agent$" > /dev/null
+    if [ $? != 0 ]
+    then
+        eval $($SSH_AGENT)
+    fi
+fi
+unset SSH_USE_FORWARDED
+
+SSH_FOUND_SOCKS=""
+SSH_AGENT_PID=""
+for SSH_FOUND_SOCK in $(find /tmp/ssh-???*[0-9]* -type s -user ${LOGNAME} -name "agent.[0-9]*" 2>/dev/null)
 do
 
-    GOT_AGENT=1
+    SSH_SOCK_PID=${SSH_FOUND_SOCK##*.}
+    SSH_AGENT_PID=$(ps -fu${LOGNAME}|
+        awk '/ssh-agent$/ && ( $2=='${SSH_SOCK_PID}' || $3=='${SSH_SOCK_PID}' || $2=='${SSH_SOCK_PID}' +1 || $2=='${SSH_SOCK_PID}' +3) {print $2}'
+    )
 
-    SOCK_PID=${SSH_AUTH_SOCK##*.}
-    SSH_AGENT_PID=$(ps -fu${LOGNAME}|awk '/ssh-agent$/ && ( $2=='${SOCK_PID}' || $3=='${SOCK_PID}' || $2=='${SOCK_PID}' +1 ) {print $2}')
-    if [[ -z "$SSH_AGENT_PID" ]]
-    then
-        echo "WARNING: Derived SSH_AGENT_PID (with SOCK_PID+3)"
-        let SSH_AGENT_PID=SOCK_PID+3
-    fi
-    export SSH_AGENT_PID;
-    export SSH_AUTH_SOCK;
+    # echo "SSH_SOCK_PID=$SSH_SOCK_PID"
 
-    if [[ $1 = "-v" ]]
+    if [ -n "$SSH_AGENT_PID" ]
     then
-        echo "SOCK_PID=${SOCK_PID}"
-        echo "SSH_AGENT_PID=${SSH_AGENT_PID}"
-    fi
-
-    $SSH_ADD -l > /dev/null 2>&1
-    if [ $? = 0 ]
-    then
-        #
-        # 2048 af:b2:7a:6e:a3:df:18:78:ad:25:07:9b:c4:ff:01:58 /u/harrij/.ssh/id_rsa (RSA)
-        #
-        if [[ ! "$1" = "-v" ]]
+        SSH_AUTH_SOCK=$SSH_FOUND_SOCK
+        break 2
+    else
+        if [ $SSH_VERB = 2 ]
         then
-            echo "Using agent ${SSH_AGENT_PID}"
+            echo >&2 "# Skipping sock ${SSH_FOUND_SOCK} (no agent PID)"
         fi
-        break
-    elif [ $? = 1 ]
-    then
-        #
-        # The agent has no identities.
-        #
-        echo "Agent ${SSH_AGENT_PID} has no keys..."
-        $SSH_ADD
-        break
-    elif [ $? = 2 ]
-    then
-        #
-        # Could not open a connection to your authentication agent.
-        #
-        echo "How did we get a socket & no agent?"
-        eval $($SSH_AGENT)
-        $SSH_ADD
-        break
+        SSH_SSHD_PROC=$(ps -fu${LOGNAME} | awk '$2 == '${SSH_SOCK_PID}'{print $0}' | grep sshd)
+        if [ $? = 0 ]
+        then
+            if [ $SSH_VERB -gt 1 ]
+            then
+                echo "Could use: $SSH_SSHD_PROC"
+            fi
+            SSH_FOUND_SOCKS="$SSH_FOUND_SOCKS $SSH_FOUND_SOCK"
+        else
+            echo "Dead socket? $SSH_FOUND_SOCK"
+        fi
+        unset SSH_SSHD_PROC
     fi
-
-    echo "Skipping pid ${SSH_AGENT_PID}"
-    GOT_AGENT=0
 
 done
 
+if [ -n "$SSH_AGENT_PID" ]
+then
+
+    export SSH_AGENT_PID;
+
+else
+
+    for SSH_FOUND_SOCK in $SSH_FOUND_SOCKS
+    do
+
+        echo "WARNING: Using fowarded agent sock [$SSH_FOUND_SOCK] with no PID"
+        SSH_AUTH_SOCK=${SSH_FOUND_SOCK}
+        break 2
+
+    done
+
+    # let SSH_AGENT_PID=SSH_SOCK_PID+3
+    # ps -fu$LOGNAME | grep $SSH_AGENT_PID
+    # echo "WARNING: Derived SSH_AGENT_PID (with SSH_SOCK_PID+3)"
+
+fi
+
+unset SSH_SOCK_PID SSH_FOUND_SOCK SSH_FOUND_SOCKS
+
+export SSH_AUTH_SOCK;
+
+$SSH_ADD -l > /dev/null 2>&1
+if [ $? = 0 ]
+then
+    #
+    # 2048 af:b2:7a:6e:a3:df:18:78:ad:25:07:9b:c4:ff:01:58 /u/harrij/.ssh/id_rsa (RSA)
+    #
+    if [ $SSH_VERB = 0 ] && [ -n $SSH_AGENT_PID ]
+    then
+        echo "Using agent ${SSH_AGENT_PID}"
+    fi
+elif [ $? = 1 ]
+then
+    #
+    # The agent has no identities.
+    #
+    # echo "Agent ${SSH_AGENT_PID} has no keys..."
+    $SSH_ADD
+elif [ $? = 2 ]
+then
+    #
+    # Could not open a connection to your authentication agent.
+    #
+    echo "How did we get a socket & no agent?"
+    eval $($SSH_AGENT)
+    $SSH_ADD
+fi
+unset SSH_ADD SSH_AGENT
+
+if [ -n "$SSH_AGENT_PID" ]
+then
+    if [ $SSH_VERB -ge 1 ]
+    then
+        echo "SSH_AGENT_PID=${SSH_AGENT_PID}"
+    fi
+else
+    unset SSH_AGENT_PID;
+fi
+
+if [ $SSH_VERB -ge 1 ]
+then
+    echo "SSH_AUTH_SOCK=${SSH_AUTH_SOCK}"
+fi
+unset SSH_VERB
+
+set +u
 

@@ -16,7 +16,10 @@ use strict;
 my $file = shift;
 die "Usage: $0 FILE\n" if ! $file;
 
-my $cal = '/bin/cal';
+my $cal = '/usr/bin/cal';
+if ( -x '/bin/cal' ) {
+    $cal = '/bin/cal';
+}
 
 my ($sec,$min,$hour,$mday,$mon,$this_year,$wday,$yday,$isdst)
     = gmtime(time);
@@ -61,12 +64,18 @@ while (defined (my $line = <$file_fh>)) {
         die $line;
     }
 
-    next if $line !~ /log/;
-    $last = $line;
-    last;
+    if ( $line =~ /log/ ) {
+        $last = $line;
+        last;
+    } elsif ( $line =~ /\w+\s+\w+\s+\S+\s+(\w+\s+\w+\d+)/ ) {
+        $last = $line;
+        last;
+    }
 
 }
 close $file_fh;
+
+die "Didn't get date from input\n" if ! $last;
 
 chomp $last;
 
@@ -84,6 +93,16 @@ if ( $last =~ /Last login (.*) \d+:\d+ on .* from/ ) {
 
     print "$last\n";
     exit;
+
+} elsif ( $last =~ /^\w+\s+\w+\s+[\d\.]+\s+(\w+\s+\w+\s+\d+)\s+\d+:\d+\s+/ ) {
+
+    print "$last\n";
+
+    my ( $day, $mon, $dom ) = split(/\s+/, $1);
+
+    for my $yr ( reverse @years ) {
+        cal_mon( $yr, $mon, $day, $dom );
+    }
 
 } else {
 

@@ -80,10 +80,10 @@ sub list_file ($$) {
     # in case you're using NIS or LDAP
     #
     unless ( $pw{usr}{$stat->[4]} ) {
-        $pw{usr}{$stat->[4]} = getpwuid($stat->[4]);
+        $pw{usr}{$stat->[4]} = ( getpwuid($stat->[4]) || $stat->[4] );
     }
     unless ( $pw{grp}{$stat->[5]} ) {
-        $pw{grp}{$stat->[5]} = getgrgid($stat->[5]);
+        $pw{grp}{$stat->[5]} = ( getgrgid($stat->[5]) || $stat->[5] ) ;
     }
 
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =

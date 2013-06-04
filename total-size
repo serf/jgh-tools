@@ -6,18 +6,55 @@ use strict;
 use Getopt::Std;
 
 my %opts;
-getopts('bkmg', \%opts);
+getopts('bkmgfnc:h', \%opts);
+
+if ( $opts{h} ) {
+    die <<EOT;
+Usage: $0 -[b|k|m|g] -[f|n|c COL] -[h]
+Where:
+  -b - Show total in bytes
+  -k - Show total in kilobytes
+  -m - Show total in megabytes
+  -g - Show total in gigabytes
+
+Default output is in the most appropriate units for the size.
+
+  -f - Sum 7th column (find -ls format)
+  -n - Sum 1st colum (list of numbers)
+  -c - Sum column COL
+
+Default column is 5, to sum the output of 'ls -l'
+
+  -h - Show this help
+
+EOT
+}
 
 my $div = {
     b => 1,
     k => 1024,
-    m => 1048576,
-    g => 1073741824,
+    m => 1048576,    # 1024 ** 2
+    g => 1073741824, # 1024 ** 3
 };
 
 my $total = 0;
+my $col = 4;
+my $car = '-';
+
+# Find format
+if ( $opts{f} ) {
+   $col = 6;
+   $car = '[0-9]';
+} elsif ( $opts{c} ) {
+   $col = $opts{c} -1;
+   $car = '[0-9]';
+} elsif ( $opts{n} ) {
+   $col = 0;
+   $car = '[0-9]';
+}
+
 while (<>) {
-    $total += (split(/\s+/,$_))[4] if /^-/;
+    $total += (split(/\s+/,$_))[$col] if /^$car/;
 }
 
 sub show($) {

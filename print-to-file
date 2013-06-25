@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+#
+# John Harrison 19 Jun 2013
+# To print to a (postscript) file on Solaris
+#
+# HOSTNAME=$(uname -n)
+# PORT=9100
+#
+# sudo lpadmin -p print-to-file -v /dev/null -m netstandard -I postscript -o "dest=$HOSTNAME:$PORT,protocol=tcp,timeout=5" -T PS
+# sudo accept print-to-file
+# sudo enable print-to-file
+# mkdir /var/tmp/printout
+#
+# To get rid of the banner page, modify /etc/lp/interfaces/print-to-file
+#   1) Change nobanner=no to nobanner=yes
+#   2) Make sure the line with "NETPR=..." includes "-b" ( hopefully in ${banner_flag} )
+# Then start this program (and leave it running)
+#
+use warnings;
+use strict;
+
+use IO::Socket::INET;
+
+my $myport=9100;
+my $pserve=IO::Socket::INET->new(
+    LocalPort => $myport,
+    Type=>SOCK_STREAM,
+    Reuse=>1,
+    Listen=>1
+) or die "Can't do listen on port $myport: $!\n";
+
+sub get_time () {
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+        = gmtime(time);
+
+    return sprintf "%4d-%02d-%02d.%02d%02d%02d",
+        $year + 1900, $mon + 1, $mday, $hour, $min, $sec;
+}
+
+my $pjob;
+my $i;
+
+while ($pjob=$pserve->accept()) {
+
+    my $time = get_time;
+    my $uniq = $i->{$time}++;
+    my $file = "/var/tmp/printout/$time.$uniq.ps";
+
+    open(my $ps_fh,">> $file") or print "Can't print to '$file': $!\n";
+    while (<$pjob>) {
+        print $ps_fh "$_";
+    }
+    close $ps_fh;
+
+    close $pjob;
+
+}
+

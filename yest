@@ -1,5 +1,25 @@
 #!/usr/bin/perl
+#
+# This find the seconds for midday today then takes 86400 off that
+# because if we're near midnight on a DST boundary
+# we would fall into the wrong day by doing now -24hr
+#
+# Can do this in Python:
+# 
+# python -c "from datetime import date, timedelta
+# yd=date.today() - timedelta(1)
+# print(yd.strftime('%Y%m%d'))"
+#
+use strict;
+use warnings;
 
-my ($year,$mon,$day) = (localtime(time - 86400))[5,4,3];
+use Time::Local;
+
+my ($sec, $min, $hrs) = (0, 0, 12);
+my ($t_yr,$t_mon,$t_day) = (localtime(time))[5,4,3];
+
+my $today = timelocal $sec, $min, $hrs, $t_day, $t_mon, $t_yr;    
+
+my ($year,$mon,$day) = (localtime($today - 86400))[5,4,3];
 printf "%4d%02d%02d\n", $year + 1900, $mon + 1, $day;
 

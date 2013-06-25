@@ -33,6 +33,10 @@ epoch2gmt
     Convert the time in seconds since the epoch back to its date string
     (e.g. as output by +%s option to gnu date)
 
+exp-date
+    Calculate shadow file expiry date
+    See http://www.cyberciti.biz/faq/understanding-etcshadow-file/
+
 get-dir
     get-dir / gd - a simple way of jumping around dirs you use all the time
 
@@ -62,6 +66,12 @@ getlinks-htb
     Output the links in a web page
     (needs HTML::TreeBuilder - or use getlinks-simple)
 
+get-path
+    Validate your path & add any required directories
+    This uses only intrinsic bash commands
+    so will still work if you've lost your path :-)
+    invoke with PATH=$(/path/to/get-path)
+
 get-title
     Output the title of a web page
 
@@ -82,6 +92,9 @@ html-list
     or
         getlinks https://github.com/serf/jgh-tools | html-list
 
+ini-read
+    Read values from an INI style config file
+
 inline
     Invoke Perl's inline edit on a file to substitute a string with another
 
@@ -89,6 +102,10 @@ ip2hex
     IP address to HEX address converter
     e.g. ip2hex 158.23.45.10 outputs 9E172D0A
     from: http://perlmonks.org/?node_id=11876
+
+last-year
+    Passed the output of finger, it will work out what year (since 2000)
+    that day could have been.
 
 list-core-times
     For Solaris
@@ -147,8 +164,16 @@ pc
 petar
     Directory of files from: http://geocities.com/h2428/petar/
 
+print-to-file
+    Listen to a port as a dummy printer, and save the print job to a file.
+    (used for catching postscript print jobs to a postscript file)
+
 putty_reg.pl
     Create a Windows shortcut to each session stored in PuTTY
+
+pwgen
+    Generate random temporary passwords for resetting users passwords
+    Ugly enough that they'll want to change them to something else.
 
 README
     Well done... You did what you were told! :-)
@@ -231,6 +256,9 @@ tick
     Useful as a lightweight SSH keepalive by generating constant traffic
     (i.e. run it in your terminal while you're not interacting with it)
 
+title-case
+    Conver first letter of words to upper case and the rest to lower case.
+
 total-size
     Add up the size of all the files in the output of ls -l
 
@@ -254,4 +282,8 @@ viw
 
 web-get
     Pure perl replacement for wget & cURL for boxes that can't have them    
+
+yest
+    Print Yesterday's date, the same output as:
+    TZ=GMT+24 date +%Y%m%d
 

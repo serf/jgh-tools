@@ -76,7 +76,7 @@ get-title
     Output the title of a web page
 
 git-latest
-    Output the links to the latest version of thE git RPMs
+    Output the links to the latest version of the git RPMs
     (based on getlinks-simple)
     my $url = 'http://kernel.org/pub/software/scm/git/RPMS/x86_64/';
     ...which you can then use with:  wget -Ni list

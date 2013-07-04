@@ -1,0 +1,53 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $df_cmd = '/bin/df -h';
+if ( $^O eq 'linux' ) {
+    $df_cmd = '/bin/df -hP';
+}
+
+my ($want_pc, $want_fs) = (shift,shift);
+die "Usage: $0 TARGET_USAGE FS\n" if ! $want_fs;
+die "$0 ERROR: TARGET_USASE is not numeric\n" if $want_pc !~ /^\d+$/;
+
+my @found;
+
+open (my $df_out_fh, "$df_cmd|") || die "Can't run '$df_cmd': $!\n";
+while (defined (my $line = <$df_out_fh>)) {
+
+    #
+    my @line = split(/\s+/, $line);
+    if ( $line[4] =~ /^(\d+)%$/ ) {
+        if ( $line =~ /$want_fs/ ) {
+            push @found, \@line;
+        }
+    }
+
+}
+close $df_out_fh;
+
+if ( @found ) {
+
+} else {
+
+   die "No FS found matching '$want_fs'\n";
+
+}
+
+my $fs;
+
+for my $fs_ ( @found ) {
+
+    print join "\t", @$fs_, $/;
+    ($fs->{have} = $fs_->[1]) =~ s/^(\d+)[G]$/$1/;
+    ($fs->{used} = $fs_->[2]) =~ s/^(\d+)[G]$/$1/;
+    ($fs->{perc} = $fs_->[4]) =~ s/^(\d+)%$/$1/;
+
+}
+
+printf "Need %dG for %dG to make it %d%% full\n", 100 * $fs->{used} / $want_pc, $fs->{used}, $want_pc;
+

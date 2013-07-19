@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $cmd = '/bin/ps -eLf';
+
+my $procs;
+open (my $cmd_fh, "$cmd|") || die "Can't run '$cmd': $!\n";
+while (defined (my $line = <$cmd_fh>)) {
+
+    #
+    my @line = split(/\s+/, $line);
+    for my $i ( 0 .. 9 ) {
+        print "$line[$i] ";
+    }
+    print $/;
+    for my $i ( 10 .. $#line ) {
+        print "\t$line[$i]\n";
+    }
+    $procs->{$line[1]}++;
+
+}
+close $cmd_fh;
+
+my @keys = sort { $procs->{$b} <=> $procs->{$a} } keys(%$procs);
+my @vals = @{$procs}{@keys};
+
+for my $key ( @keys ) {
+    next if $procs->{$key} < 2;
+    printf "%5d %s\n", $procs->{$key}, $key;
+}

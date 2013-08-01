@@ -17,6 +17,7 @@ Usage: $0 [-h] [-d] [-f] [-c] [-o] [-u]
       -o = Use old (pre 5.6) Perl syntax TYPEGLOB & -w flag
            instead of Perl 5.6 or newer lexical filehandles & use warnings; pragma
       -u = This usage
+      -x = Execute command (actually open a pipe from a command)
 
   deprecated:
       -n = Was 'new' - now use '-o' for old
@@ -65,6 +66,8 @@ EOT
 
 }
 
+$f = 1 if $x;
+
 if ( $f ) {
 
     my $file;
@@ -76,14 +79,22 @@ if ( $f ) {
 
         $file_path = '$some_dir/$file';
 
-    }
-    else {
+    } elsif ( $x ) {
+
+        $file_path = '$cmd';
+
+    } else {
 
         $file_path = '$file';
 
     }
 
-    if ( $o ) {
+    if ( $x ) {
+
+        $file = sprintf qq~\nopen (my \$cmd_fh, "$file_path|") || die "Can't run '$file_path': \$!\\n";\n~ .
+            "while (defined (my \$line = <\$cmd_fh>)) {\n\n    #\n\n}\nclose \$cmd_fh;\n\n";
+
+    } elsif ( $o ) {
 
         $file = sprintf qq~\nopen (FILE, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <FILE>)) {\n\n    #\n\n}\nclose FILE;\n\n";
@@ -112,7 +123,13 @@ if ( $f ) {
         print $file;
 
     }
-    else {
+    elsif ( $x ) {
+
+        print q~my $cmd = '/bin/cmd';~, $/;
+
+        print $file;
+
+    } else {
 
         print q~my $file = 'file.txt';~, $/;
 

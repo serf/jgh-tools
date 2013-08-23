@@ -152,6 +152,9 @@ new
 new-dir
     Clone a directory structure and copy the permissions
 
+no-user
+    List files (with the uid:gid) that have no user or group
+
 only-in
     find lines which are in the first file, but not in the second.
 

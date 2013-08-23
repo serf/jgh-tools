@@ -107,6 +107,9 @@ last-year
     Passed the output of finger, it will work out what year (since 2000)
     that day could have been.
 
+lineup
+    Line up the fields in the output nicely
+
 list-core-times
     For Solaris
     Show the times of the coredumps from the timestamp in their filenames

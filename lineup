@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $data;
+my $max;
+
+while (defined (my $line = <>)) {
+
+    #
+    push @{$data}, [split(/\s+/, $line)];
+
+}
+
+my $fields = $#{$data->[0]};
+@{$max} =  map(0, @{$data->[0]});
+
+#
+# Find longest records
+#
+for my $i ( 0 .. $#{$data} ) {
+
+    if ( $#{$data->[$i]} != $fields ) {
+
+
+        print STDERR "First line was:\n" . join ( " ", @{$data->[0]}) . "'\n";
+        print STDERR "This line is:\n" . join (" ", @{$data->[$i]}) . "'\n";
+        die "This has " . $#{$data->[$i]} . " fields, not $fields\n";
+
+    }
+
+    for my $f ( 0 .. $#{$data->[$i]} )  {
+        $max->[$f] = length($data->[$i]->[$f]) if length($data->[$i]->[$f]) > $max->[$f];
+    }
+
+}
+
+#
+# print formatted records
+#
+for my $i ( 0 .. $#{$data} ) {
+
+    for my $f ( 0 .. $#{$data->[$i]} )  {
+        my $format = "%-" . $max->[$f] . "s ";
+        printf $format, $data->[$i]->[$f];
+    }
+    print $/;
+}
+

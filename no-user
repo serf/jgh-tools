@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+#
+# List files which have no user or group specified
+# (i.e. only numeric)
+#
+use warnings;
+use strict;
+
+my $dir = shift;
+if ( ! $dir ) {
+    $dir = '.';
+}
+die "$0: ERROR: Directory '$dir' not found\n" if ! -d $dir;
+
+opendir(my $dir_fh, $dir) || die "Can't opendir '$dir': $!\n";
+my @files = grep { /^./ && -f "$dir/$_" } readdir($dir_fh);
+closedir $dir_fh;
+
+for my $file ( @files ) {
+
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat("$dir/$file")
+        or die "Can't stat '$dir/$file': $!\n";
+
+    my ($user, $group) = (getpwuid $uid,getgrgid $gid);
+
+    my $print = 0;
+    if ( ! $user ) {
+        $user = $uid;
+        $print = 1;
+    }
+    if ( ! $group ) {
+        $group = $gid;
+        $print = 1;
+    }
+
+    print "$user:$group $file\n" if $print;
+
+}
+

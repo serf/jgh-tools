@@ -80,9 +80,21 @@ do
             fi
             SSH_FOUND_SOCKS="$SSH_FOUND_SOCKS $SSH_FOUND_SOCK"
         else
-            echo "Dead socket? $SSH_FOUND_SOCK"
+            SSH_FOUND_SOCK_PID=${SSH_FOUND_SOCK##*.}
+            for SSH_FOUND_PID in $(ps -fu${LOGNAME} | awk '/ssh-agent$/ { print $2 }')
+            do
+                let SSH_PID_DIFF=SSH_FOUND_PID-SSH_FOUND_SOCK_PID
+                if [ $SSH_PID_DIFF -lt 5 ]
+                then
+                    echo "Found socket PID $SSH_FOUND_SOCK_PID is $SSH_PID_DIFF less than $SSH_FOUND_PID"
+                    SSH_AGENT_PID=$SSH_FOUND_PID
+                    SSH_FOUND_SOCKS="$SSH_FOUND_SOCKS $SSH_FOUND_SOCK"
+                else
+                    echo "Dead socket? $SSH_FOUND_SOCK"
+                fi
+            done
         fi
-        unset SSH_SSHD_PROC
+        unset SSH_SSHD_PROC SSH_FOUND_SOCK_PID SSH_FOUND_PID SSH_PID_DIFF
     fi
 
 done

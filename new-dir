@@ -20,6 +20,7 @@ fi
 for SUB in $(find $DIR -type d)
 do
     mkdir "new.$SUB"
+    eval $(perl -le'printf "chown %d:%d \"new.%s\"\n", (stat)[4], (stat)[5], $_ for @ARGV ' "$SUB")
     eval $(perl -le'printf "chmod %o \"new.%s\"\n", 07777 & (stat)[2], $_ for @ARGV ' "$SUB")
 done
 

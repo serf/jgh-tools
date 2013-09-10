@@ -13,7 +13,7 @@ if ( ! $dir ) {
 die "$0: ERROR: Directory '$dir' not found\n" if ! -d $dir;
 
 opendir(my $dir_fh, $dir) || die "Can't opendir '$dir': $!\n";
-my @files = grep { /^./ && -f "$dir/$_" } readdir($dir_fh);
+my @files = grep { /^./ && -e "$dir/$_" } readdir($dir_fh);
 closedir $dir_fh;
 
 for my $file ( @files ) {

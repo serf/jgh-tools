@@ -108,11 +108,22 @@ sub gen_ck () {
             # Recurse if our password doesn't have one of each set
             #
             undef $plaintext;
+            undef @plaintext;
             gen_ck();
 
         }
 
     }
+
+    for my $p ( 0 .. $#plaintext ) {
+        # printf "%s:%s ", $plaintext[$p-1], $plaintext[$p];
+        if ( $plaintext[$p] eq $plaintext[$p-1] ) {
+            # print "\nGot $plaintext Recalculating...\n";
+            undef $plaintext;
+            gen_ck();
+        }
+    }
+    # print $/;
 
 }
 

@@ -1,0 +1,71 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $user = shift;
+die "Usage: $0 USER\n" if ! $user;
+
+use File::Spec;
+
+sub check_file_perms($) {
+
+    my $file = shift;
+
+    my $mode = (stat $file)[2];
+    if ( ( 0022 & $mode ) != 0 ) {
+        print "FAIL: ";
+    }
+    printf "%o %s\n", 07777 & $mode, $file;
+
+}
+
+sub check_path_perms ($) {
+
+    my $file = shift;
+
+    my $abs_path = File::Spec->rel2abs($file);
+
+    my @abs_path = split('/', $abs_path);
+    shift @abs_path;
+
+    my $built = "";
+    for my $chunk ( @abs_path ) {
+        $built = "$built/$chunk";
+        check_file_perms($built);
+    }
+
+}
+
+my $home_dir = (getpwnam($user))[7];
+
+my $ssh_dir = "$home_dir/.ssh";
+
+die "ERROR: .ssh dir '$ssh_dir' does not exist\n" if ! -d $ssh_dir;
+
+check_path_perms($ssh_dir);
+
+opendir(my $ssh_dir_fh, $ssh_dir) || die "Can't opendir '$ssh_dir': $!\n";
+my @ssh_files = grep { /^./ && -f "$ssh_dir/$_" } readdir($ssh_dir_fh);
+closedir $ssh_dir_fh;
+
+for my $file ( @ssh_files ) {
+    check_file_perms("$ssh_dir/$file");
+}
+
+my $msgs;
+if ($^O eq 'solaris') {
+    $msgs = '/var/adm/messages';
+}
+
+open (my $msgs_fh, "$msgs") || die "Can't read '$msgs': $!\n";
+while (defined (my $line = <$msgs_fh>)) {
+
+    #
+    print $line if $line =~ /$user/ && $line =~ /locked/;
+
+}
+close $msgs_fh;
+

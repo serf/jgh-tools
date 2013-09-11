@@ -1,0 +1,12 @@
+#!/bin/bash
+
+SRC_FILE=$1
+DEST_DIR=$2
+
+SRC_DIR=$(dirname $SRC_FILE)
+SRC_BASE=$(basename $SRC_FILE)
+
+pushd $SRC_DIR
+
+git log --pretty=email --patch-with-stat --full-index --binary --reverse -- $SRC_BASE | (popd $DEST_DIR && git am)
+

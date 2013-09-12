@@ -1,0 +1,91 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Getopt::Long;
+use Data::Dumper;
+
+sub show_help () {
+
+#
+# from perldoc stat
+#
+
+die <<EOT;
+Usage: $0 [opts] [FILE]
+--help
+--head
+--[FIELD_NAME]
+where:
+     0 dev      device number of filesystem
+     1 ino      inode number
+     2 mode     file mode  (type and permissions)
+     3 nlink    number of (hard) links to the file
+     4 uid      numeric user ID of file's owner
+     5 gid      numeric group ID of file's owner
+     6 rdev     the device identifier (special files only)
+     7 size     total size of file, in bytes
+     8 atime    last access time in seconds since the epoch
+     9 mtime    last modify time in seconds since the epoch
+    10 ctime    inode change time in seconds since the epoch (*)
+    11 blksize  preferred block size for file system I/O
+    12 blocks   actual number of blocks allocated
+EOT
+
+}
+
+my @fields = qw( dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks help head );
+
+my (%opts, %all_opts);
+my $all_opts = \%all_opts;
+
+my $cmd;
+my ($i,$on) = (0,0);
+for my $field ( @fields ) {
+    $all_opts{$field} = \$opts{$field};
+    $cmd->{$field} = $i++;
+}
+
+GetOptions( \%all_opts, @fields );
+show_help if $opts{help};
+
+my $file = shift;
+die "Usage: $0 FILE\n" if ! $file;
+
+my $want;
+for my $field ( @fields ) {
+    if ( defined $opts{$field} ) {
+        $want->{$cmd->{$field}} = $field;
+        $on++;
+    }
+}
+
+my @stat;
+@stat = stat($file) or die "Can't stat '$file': $!\n";
+
+if ( $opts{head} ) {
+    splice(@fields,-2);
+    print join(":", @fields), $/;
+    $on = 0;
+}
+
+if ( $on > 1 ) {
+
+    for my $i ( 0 .. 12 ) {
+        print "$want->{$i} : $stat[$i]\n" if $want->{$i};
+    }
+
+} elsif ( $on == 1 ) {
+
+    for my $i ( 0 .. 12 ) {
+        print $stat[$i], $/ if $want->{$i};
+    }
+
+} else {
+
+    print join(":", @stat), $/;
+
+}
+

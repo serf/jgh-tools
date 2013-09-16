@@ -1,0 +1,63 @@
+#!/usr/bin/perl
+#
+# From http://www.nntp.perl.org/group/perl.beginners/2003/01/msg40076.html
+#
+
+my ($conv,$in) = (shift,shift);
+
+if ( $conv eq 'bin2dec' ) {
+  
+   $out = unpack("N", pack("B32", substr("0" x 32 . $in, -32))); 
+  
+} elsif ( $conv eq 'bin2hex' ) {
+  
+   $out = unpack("H8", pack("B32", substr("0" x 32 . $in, -32))); 
+  
+} elsif ( $conv eq 'bin2oct' ) {
+  
+   $out = sprintf "%o", unpack("N", pack("B32", substr("0" x 32 . $in, -32))); 
+  
+} elsif ( $conv eq 'dec2bin' ) {
+  
+   $out = unpack("B*", pack("N", $in));
+  
+} elsif ( $conv eq 'dec2hex' ) {
+  
+   $out = unpack("H8", pack("N", $in));
+  
+} elsif ( $conv eq 'dec2oct' ) {
+  
+   $out = sprintf "%o", $in;
+  
+} elsif ( $conv eq 'hex2bin' ) {
+  
+   $out = unpack("B32", pack("N", hex $in));
+  
+} elsif ( $conv eq 'hex2dec' ) {
+  
+   $out = hex $in;
+  
+} elsif ( $conv eq 'hex2oct' ) {
+  
+   $out = sprintf "%o", hex $in;
+  
+} elsif ( $conv eq 'oct2bin' ) {
+  
+   $out = unpack("B32", pack("N", oct $in));
+  
+} elsif ( $conv eq 'oct2dec' ) {
+  
+   $out = oct $in;
+  
+} elsif ( $conv eq 'oct2hex' ) {
+  
+   $out = unpack("H8", pack("N", oct $in));
+
+} else {
+
+   die "Usage: $0 [bin2dec|bin2hex|bin2oct|dec2bin|dec2hex|dec2oct] NUM\n ...or $0 [hex2bin|hex2dec|hex2oct|oct2bin|oct2dec|oct2hex] NUM\n";
+
+}
+
+print "$out\n";
+

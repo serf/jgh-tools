@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $total;
+
+if ( $#ARGV == -1 ) {
+
+while (defined (my $line = <>)) {
+
+    #
+    $line =~ s/\xa3//g; # Pound symbol
+    $line =~ s/\$//g;
+    $line =~ s/,//g;
+    $line =~ s/\s+/ /g;
+    $line =~ s/^\s//g;
+    $line =~ s/\s$//g;
+    next if $line =~ /^$/;
+    die "Bad data: '$line'\n" if $line !~ /^[\d\.]+$/;
+    $total += $line;
+
+}
+
+# || $ARGV[0] eq '+' ) {
+} elsif ( $ARGV[-1] eq '+' ) {
+
+    pop @ARGV;
+    $total = eval(join('+',@ARGV));
+
+} elsif ( $ARGV[0] eq '+' ) {
+
+    shift;
+    $total = eval(join('+',@ARGV));
+
+}
+
+print $total, $/;
+

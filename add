@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -s
 #
 #
 #
@@ -6,25 +6,38 @@ use warnings;
 use strict;
 
 my $total;
+our $s;
 
-if ( $#ARGV == -1 ) {
+sub read_file ($) {
 
-while (defined (my $line = <>)) {
+    my $file = shift;
 
-    #
-    $line =~ s/\xa3//g; # Pound symbol
-    $line =~ s/\$//g;
-    $line =~ s/,//g;
-    $line =~ s/\s+/ /g;
-    $line =~ s/^\s//g;
-    $line =~ s/\s$//g;
-    next if $line =~ /^$/;
-    die "Bad data: '$line'\n" if $line !~ /^[\d\.]+$/;
-    $total += $line;
+    open (my $file_fh, "$file") || die "Can't read '$file': $!\n";
+    while (defined (my $line = <$file_fh>)) {
+
+        #
+        $line =~ s/\xa3//g; # Pound symbol
+        $line =~ s/\$//g;
+        $line =~ s/,//g;
+        $line =~ s/\s+/ /g;
+        $line =~ s/^\s//g;
+        $line =~ s/\s$//g;
+        if ( $s && $line =~ / / ) {
+            $line = eval(join('+',split(/\s+/,$line)));
+        }
+        next if $line =~ /^$/;
+        die "Bad data: '$line'\n" if $line !~ /^[\d\.]+$/;
+        $total += $line;
+
+    }
+    close $file_fh;
 
 }
 
-# || $ARGV[0] eq '+' ) {
+if ( $#ARGV == -1 ) {
+
+    read_file('-');
+
 } elsif ( $ARGV[-1] eq '+' ) {
 
     pop @ARGV;
@@ -34,6 +47,10 @@ while (defined (my $line = <>)) {
 
     shift;
     $total = eval(join('+',@ARGV));
+
+} elsif ( -r $ARGV[0 ] ) {
+
+    read_file(shift);
 
 }
 

@@ -8,6 +8,7 @@ use strict;
 my $cmd = '/bin/ps -eLf';
 
 my $procs;
+my $total = 0;
 open (my $cmd_fh, "$cmd|") || die "Can't run '$cmd': $!\n";
 while (defined (my $line = <$cmd_fh>)) {
 
@@ -21,6 +22,7 @@ while (defined (my $line = <$cmd_fh>)) {
         print "\t$line[$i]\n";
     }
     $procs->{$line[1]}++;
+    $total++;
 
 }
 close $cmd_fh;
@@ -32,3 +34,6 @@ for my $key ( @keys ) {
     next if $procs->{$key} < 2;
     printf "%5d %s\n", $procs->{$key}, $key;
 }
+
+print "Total: $total\n";
+

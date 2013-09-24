@@ -65,6 +65,7 @@ where:
   -i | --include   - Other paths to include (outside this directory)
   -k | --keep      - Keep specified files (requires list of files)
   -m | --master    - Include & Keep specified files (= -i + -k)
+  -d | --thin-dir  - same as -r -m DIR (DIR specifies master)
 
 NB: Options -i, -k & -m require a list of files/paths
 
@@ -88,7 +89,7 @@ $| = 1;
 #
 # Process command line arguments
 #
-my (@include, @keep, @master);
+my (@include, @keep, @master, @thin_dir);
 my %opts;
 
 GetOptions(
@@ -100,21 +101,28 @@ GetOptions(
     'k=s{,}' => \@keep,
     'master=s{,}' => \@master,
     'm=s{,}' => \@master,
+    'thin-dir=s{,}' => \@thin_dir,
+    'd=s{,}' => \@thin_dir,
     'yes'  => \$opts{f},
     'y'  => \$opts{f},
     'force'  => \$opts{f},
     'f'  => \$opts{f},
+    'man'  => \$opts{m},
     'no'  => \$opts{n},
     'n'  => \$opts{n},
-    'verbose'  => \$opts{v},
-    'v'  => \$opts{v},
     'tick'  => \$opts{t},
     'help'  => \$opts{u},
     'usage'  => \$opts{u},
     'h'  => \$opts{u},
     'u'  => \$opts{u},
-    'man'  => \$opts{m},
+    'verbose'  => \$opts{v},
+    'v'  => \$opts{v},
     );
+
+if ( $#thin_dir == 0 ) {
+    push @master, @thin_dir;
+    $opts{r} = 1;
+}
 
 $opts{f} = 1 if $opts{y};
 $opts{u} = 1 if $opts{h};

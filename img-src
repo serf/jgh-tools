@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+#
+# For if you don't have Image::Magick installed but you do have identify
+#
+use warnings;
+use strict;
+
+my $identify = '/usr/bin/identify';
+
+for my $file ( @ARGV ) {
+
+    open (my $id_fh, "$identify $file|") || die "Can't run '$identify $file': $!\n";
+    while (defined (my $line = <$id_fh>)) {
+
+        next if $line !~ /$file/;
+        #
+        # img/check_mk.100.png PNG 100x56 100x56+0+0 DirectClass 6.4kb
+        #
+        my ($name, $fmt, $dims, $offset, $junk, $size) = split(/ /, $line);
+        my ($width,$height) = split(/x/, $dims);
+        my $alt = "$name ($size)";
+        print qq~<img src="$name" border="0" width="$width" height="$height" alt="$alt">\n~;
+
+    }
+    close $id_fh;
+
+}
+

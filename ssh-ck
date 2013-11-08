@@ -55,9 +55,15 @@ for my $file ( @ssh_files ) {
     check_file_perms("$ssh_dir/$file");
 }
 
+if ( -f "$ssh_dir/authorised_keys" ) {
+    print "FAIL: '$ssh_dir/authorised_keys' should be called '$ssh_dir/authorized_keys'\n";
+}
+
 my $msgs;
 if ($^O eq 'solaris') {
     $msgs = '/var/adm/messages';
+} elsif ($^O eq 'linux') {
+    $msgs = '/var/log/messages';
 }
 
 open (my $msgs_fh, "$msgs") || die "Can't read '$msgs': $!\n";

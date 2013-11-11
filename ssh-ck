@@ -6,7 +6,10 @@ use warnings;
 use strict;
 
 my $user = shift;
-die "Usage: $0 USER\n" if ! $user;
+if ( ! $user ) {
+    $user = getpwuid( $< );
+    print "$0: Defaulting to '$user'. (use: '$0 USER' to change)\n";
+}
 
 use File::Spec;
 

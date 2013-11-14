@@ -128,6 +128,7 @@ Invoke Perl's inline edit on a file to substitute a string with another
 ### ip2hex
 IP address to HEX address converter
 e.g. `ip2hex 158.23.45.10` outputs `9E172D0A`
+
 from: http://perlmonks.org/?node_id=11876
 
 ### last-year
@@ -219,8 +220,11 @@ For Solaris - run pstack, pmap and pargs on a core dump then remove it
 
 ### ren
 rename files interactively
+
 You may change the path to your editor...
+
 Mine's usually /usr/bin/vim - but /bin/vi is often symlinked to that if it's installed...
+
 http://snippets.dzone.com/posts/show/7955
 
 ### rot13
@@ -228,6 +232,7 @@ perform simple rot13 encryption
 
 ### sci
 A pair of scissors... draw a perforated line to cut along...
+
 You can call this from within vi with `<ESC>!!sci<Return>` to get:
 ```
 8< - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -241,9 +246,11 @@ The fastest way I know of to numerically sort a list of IP addresses
 Re-use existing ssh-agent
 If you have an ssh-agent running, work out its variables & set it as your environment.
 If you don't have one running, start a new one. Add a key if there isn't one loaded.
+
 from:
 - http://snippets.dzone.com/posts/show/10897
 - http://snippets.dzone.com/posts/show/8187
+- 
 ...and some tweaking
 
 ### ssh-ck
@@ -273,7 +280,9 @@ Run with:
         thin-dir (path_to_other_directory)
 ```
 It will prompt you to remove any files in this directory that are a copy of a file in the other directory.
+
 (i.e. have the same name and md5sum)
+
 http://snippets.dzone.com/posts/show/7869
 
 ### thin-dirr
@@ -284,11 +293,13 @@ Look at integrating this into thin-dir & calling it with -r
 ### thin-down
 remove files
 Removes duplicate files from subdirectories.
+
 http://snippets.dzone.com/posts/show/7871
 
 ### thin-dup
 remove duplicate files
 This compares the md5sum of files and prompts to remove copies of files that are duplicated.
+
 http://snippets.dzone.com/posts/show/7868
 
 ### thin-zero

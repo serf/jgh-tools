@@ -182,6 +182,7 @@ new
       deprecated:
           -n = Was 'new' - now use '-o' for old
 ```
+
 >    This saves you retyping it, making a typo, and makes sure you've not forgotten anything. 
 >    http://snippets.dzone.com/posts/show/9151
 

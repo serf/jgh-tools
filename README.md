@@ -250,7 +250,7 @@ If you don't have one running, start a new one. Add a key if there isn't one loa
 from:
 - http://snippets.dzone.com/posts/show/10897
 - http://snippets.dzone.com/posts/show/8187
-- 
+
 ...and some tweaking
 
 ### ssh-ck

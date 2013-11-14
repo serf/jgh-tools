@@ -6,13 +6,14 @@ Archive file(s) with 7zip then remove.
 
 ### acd_func.sh
 extends bash's CD to keep, display and access history of visited directory names
-from: http://geocities.com/h2428/petar/
+
+( from: http://geocities.com/h2428/petar/ )
 
 ### add
 Add up numbers on STDIN
 
 ### arg
-Like "`awk '{print $1}'`" on steroids
+Like `awk '{print $1}'` on steroids
 
 ### backup
 Backs up the filenames supplied to copies which include the
@@ -21,55 +22,46 @@ original file's timestamp in their name.
 http://snippets.dzone.com/posts/show/8251
 
 ### base
->    Convert between radices (bases)
+Convert between radices (bases)
 
 ### colours.pl
->    Show the available terminal colours with their escape code.
+Show the available terminal colours with their escape code.
 
 ### dec2oct
->    Convert a decimal number to it's IP address octets
->    e.g.:
-```
+Convert a decimal number to it's IP address octets. e.g.:
           16777216 = 1.0.0.0         = 256 x 256 x 256
         4294967295 = 255.255.255.255 = (256 x 256 x 256 x 256) - 1
-```
 
 ### dos2ux
->    Strip dos end-of-line characters (carriage return)
+Strip dos end-of-line characters (carriage return)
 
 ### dump
->    Scrape the text of a web page (requires elinks)
+Scrape the text of a web page (requires elinks)
 
 ### epoch2gmt
->    Convert the time in seconds since the epoch back to its date string
->    (e.g. as output by +%s option to gnu date)
+Convert the time in seconds since the epoch back to its date string
+(e.g. as output by +%s option to gnu date)
 
 ### exp-date
->    Calculate shadow file expiry date
->    See http://www.cyberciti.biz/faq/understanding-etcshadow-file/
+Calculate shadow file expiry date
+
+See http://www.cyberciti.biz/faq/understanding-etcshadow-file/
 
 ### get-dir
->    get-dir / gd - a simple way of jumping around dirs you use all the time
+get-dir / gd - a simple way of jumping around dirs you use all the time
 
->    Put this in your path as get-dir
->    add the section at the bottom to your .bashrc
->    and call it with:
-
-```
+- Put this in your path as get-dir
+- add the section at the bottom to your .bashrc
+- and call it with:
         $ gd
-```
-
->    or:
-
-```
+> or:
         $ gd [DIR_TAG]
-```
 
->    It's nice to have this with it too:
+It's nice to have this with it too:
 
->    http://www.geocities.com/h2428/petar/bash_acd.htm
+http://www.geocities.com/h2428/petar/bash_acd.htm
 
->    http://snippets.dzone.com/posts/show/9863
+http://snippets.dzone.com/posts/show/9863
 
 ### get-img-links
 >    Output the img links in a web page (based on getlinks-simple)

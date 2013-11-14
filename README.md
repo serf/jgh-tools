@@ -178,7 +178,6 @@ new
           -o = Use old (pre 5.6) Perl syntax TYPEGLOB & -w flag
                instead of Perl 5.6 or newer lexical filehandles & use warnings; pragma
           -u = This usage
-    
       deprecated:
           -n = Was 'new' - now use '-o' for old
 ```

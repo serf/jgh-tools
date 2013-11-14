@@ -2,23 +2,23 @@ These are tools I use to make life easier working on Linux & Unix machines.
 They are mostly, but not all by me. Where appropriate I have given credit.
 
 ### 7zrm
-    Archive file(s) with 7zip then remove.
+Archive file(s) with 7zip then remove.
 
 ### acd_func.sh
-    extends bash's CD to keep, display and access history of visited directory names
-    from: http://geocities.com/h2428/petar/
+extends bash's CD to keep, display and access history of visited directory names
+from: http://geocities.com/h2428/petar/
 
 ### add
-    Add up numbers on STDIN
+Add up numbers on STDIN
 
 ### arg
-    Like "`awk '{print $1}'`" on steroids
+Like "`awk '{print $1}'`" on steroids
 
 ### backup
-    Backs up the filenames supplied to copies which include the
-    original file's timestamp in their name.
+Backs up the filenames supplied to copies which include the
+original file's timestamp in their name.
     
-    http://snippets.dzone.com/posts/show/8251
+http://snippets.dzone.com/posts/show/8251
 
 ### base
 >    Convert between radices (bases)

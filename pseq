@@ -1,0 +1,78 @@
+#!/usr/bin/perl -w
+#
+#
+#
+# use warnings;
+use strict;
+
+my ($arg1,$arg2,$arg3) = (shift,shift,shift);
+my ($start,$stop,$inc);
+my $i;
+my $format = '%d';
+
+sub print_num($) {
+
+    my $num = shift;
+
+    my $frac = sprintf "%.1f", $num;
+
+    if ( $frac =~ /^(\d+)\.0/ ) {
+
+        printf "$format\n", $1;
+
+    }
+    elsif ( $frac =~ /^(\d+\.\d)/ ) {
+
+        printf "$format\n", $1;
+
+    }
+    else {
+
+        die "$num -> $frac";
+
+    }
+
+}
+
+sub seq ($$$) {
+
+    my ($start, $inc, $stop) = (shift,shift,shift);
+
+    if ( $start =~ /^0/ ) {
+        my $len = length $start;
+        $format = "%0${len}d";
+    }
+
+    if ( $inc > 0 ) {
+
+        for($i = $start; $i <= $stop; $i+=$inc) {
+            print_num($i);
+        }
+
+    }
+    else {
+
+        for($i = $start; $i >= $stop; $i+=$inc) {
+            print_num($i);
+        }
+
+    }
+
+}
+
+if ( $arg3 ) {
+
+    seq($arg1,$arg2,$arg3);
+
+}
+elsif ( $arg2 ) {
+
+    seq($arg1,1,$arg2);
+
+}
+elsif ( $arg1 ) {
+
+    seq(1,1,$arg1);
+
+}
+

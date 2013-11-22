@@ -1,0 +1,24 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $file = shift;
+die "Usage: $0 FILE\n" if ! $file;
+
+sub get_time ($) {
+    my $filename = shift;
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat($filename)
+    or die "Can't stat '$filename': $!\n";
+    return $mtime;
+}
+
+my $time_diff = time - get_time($file);
+
+my $days = $time_diff / 86400;
+
+print "$days days old\n";
+

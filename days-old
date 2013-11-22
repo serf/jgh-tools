@@ -4,6 +4,7 @@
 #
 use warnings;
 use strict;
+use integer;
 
 my $file = shift;
 die "Usage: $0 FILE\n" if ! $file;
@@ -16,9 +17,12 @@ sub get_time ($) {
     return $mtime;
 }
 
-my $time_diff = time - get_time($file);
+my $sec = time - get_time($file);
 
-my $days = $time_diff / 86400;
+my $days = int($sec/(86400));
+my $hours = ($sec/(3600))%24;
+my $mins = ($sec/60)%60;
+my $secs = $sec%60;
 
-print "$days days old\n";
+print "$days days $hours hours $mins mins $secs secs old\n";
 

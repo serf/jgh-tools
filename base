@@ -89,9 +89,9 @@ if ( $conv eq 'asc2dec' ) {
 } else {
 
    die <<EOT;
-Usage: $0 [bin2dec|bin2hex|bin2oct|dec2bin|dec2hex|dec2oct] NUM
- ...or $0 [hex2bin|hex2dec|hex2oct|oct2bin|oct2dec|oct2hex] NUM
- ...or $0 asc2dec CHARACTERS
+Usage: $0 [bin2dec|bin2hex|bin2oct|dec2asc|dec2bin|dec2hex|dec2oct] NUM
+ ...or $0 [hex2asc|hex2bin|hex2dec|hex2oct|oct2bin|oct2dec|oct2hex] NUM
+ ...or $0 [asc2dec|asc2hex|asc2hexs] CHARACTERS
  ...or $0 dec2asc "67 72 65 82 65 67 84 69 82 83"
  ...or $0 listall
  

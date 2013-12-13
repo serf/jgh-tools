@@ -9,16 +9,28 @@ use Getopt::Long;
 our %opts;
 GetOptions(
     'verbose'  => \$opts{verbose},
-    'v'  => \$opts{verbose},
-    'total'  => \$opts{total},
-    't'  => \$opts{total},
-    'help'  => \$opts{help},
-    'h'  => \$opts{help},
-    'usage'  => \$opts{help},
-    'u'  => \$opts{help},
+    'total'    => \$opts{total},
+    'time'     => \$opts{time},
+    't'        => \$opts{time},
+    'help'     => \$opts{help},
+    'procs'    => \$opts{procs},
+    'summary'  => \$opts{summary},
+    'usage'    => \$opts{help},
     );
 
-die "Usage: $0 [-total] [-verbose] [-help]\n" if $opts{help};
+if ( $opts{help} ) {
+
+die <<EOT;
+Usage: $0 [options]
+  -total    - Show the total number of threads
+  -time     - Show the time with the total threads
+  -summary  - Show PIDs with total per PID
+  -procs    - Show ps output
+  -verbose  - EVERYTHING!
+  -help     - Show this help
+EOT
+
+}
 
 my $cmd = '/bin/ps -eLf';
 
@@ -31,7 +43,7 @@ while (defined (my $line = <$cmd_fh>)) {
 
     #
     my @line = split(/\s+/, $line);
-    if ( $opts{verbose} ) {
+    if ( $opts{procs} ) {
         if ( $#line > 10 ) {
             for my $i ( 0 .. 9 ) {
                 print "$line[$i] ";
@@ -50,13 +62,23 @@ while (defined (my $line = <$cmd_fh>)) {
 }
 close $cmd_fh;
 
+sub PRINT { $opts{summary} };
 
 my @keys = sort { $procs->{$b} <=> $procs->{$a} } keys(%$procs);
 my @vals = @{$procs}{@keys};
 
 for my $key ( @keys ) {
     next if $procs->{$key} < 2;
-    printf "%5d %s\n", $procs->{$key}, $key;
+    printf "%5d %s\n", $procs->{$key}, $key if $opts{summary};
+}
+
+if ( $opts{time} ) {
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+        = localtime(time);
+
+    printf "%02d:%02d:%02d %d threads\n", $hour, $min, $sec, $total;
+
 }
 
 print "Total: $total\n" if $opts{total};

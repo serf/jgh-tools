@@ -5,29 +5,45 @@ use strict;
 use IO::Socket;
 use Getopt::Long;
 
-my ($host, $port);
-
 my %opts;
 GetOptions(
-    'h=s'   => \$host,
-    'p=s'   => \$port,
+    'h=s'   => \$opts{host},
+    'p=s'   => \$opts{port},
+    't=s'   => \$opts{timeout},
     'd'   => \$opts{debug},
 );
 
 die "Usage: $0 -h HOST -p PORT [-d]\n"
-    if ! $host || ! $port;
+    if ! $opts{host} || ! $opts{port};
+
+$opts{timeout} = 0 if ! $opts{timeout};
 
 sub DEBUG {$opts{debug}}
 
 my $socket = IO::Socket::INET->new(
     Proto     => "tcp",
-    PeerAddr  => $host,
-    PeerPort  => $port,
+    PeerAddr  => $opts{host},
+    PeerPort  => $opts{port},
+    Timeout   => $opts{timeout},
 );
-print "Connected to $host:$port OK\n";
 
-die "$0: Can't connect to '$host:$port': $!\n" if ! $socket;
-$socket->autoflush(1);
+if ( $socket ) {
 
-close $socket;
+    print "Connected to $opts{host}:$opts{port} OK\n";
+
+    $socket->autoflush(1);
+
+    close $socket;
+
+} else {
+
+    my $err = $?;
+    (my $myname = $0) =~ s{^.*/}{}g;
+    #
+    # I want to die for the exit code, but also see the output
+    #
+    open(STDERR, ">&STDOUT") || die "Can't dup STDOUT: $!\n";
+    die "$myname: Can't connect to '$opts{host}:$opts{port}': $!\n";
+
+}
 

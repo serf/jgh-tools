@@ -27,6 +27,7 @@ backward ranges:
 
   -b       - Include blank lines
   -c       - Output in CSV format instead of space seperated
+  -fSEP    - Input seperator
   =STRING= - Literal string "STRING"
   NF|c|-#  - Number of fields in line
   -u       - This usage message

@@ -6,8 +6,8 @@ use warnings;
 use strict;
 use Getopt::Std;
 
-our $opt_t = "";
-getopts("t:");
+our ($opt_h,$opt_t) = (0,"");
+getopts("ht:");
 
 print qq~<?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
@@ -20,8 +20,9 @@ print qq~<?xml version="1.0" encoding="iso-8859-1"?>
   </head>
 
   <body>
-    <ul>
-~;
+~ if ! $opt_h;
+
+print "    <ul>\n";
 
 while (<>) {
     chomp;
@@ -29,9 +30,10 @@ while (<>) {
     print "$_\n";
 }
 
+print qq~    </ul>\n~;
+
 print qq~    </ul>
   </body>
 </html>
-~;
-
+~ if ! $opt_h;
 

@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# http://www.xfree86.org/current/ctlseqs.html
+#
+if [[ "$1" == "up" ]]
+then
+    printf "\x1B[1t"
+    exit
+elif [[ "$1" == "min" ]]
+then
+    printf "\x1B[2t"
+    exit
+elif [[ "$1" == "mv" ]]
+then
+    X=$3
+    Y=$2
+    printf "\x1B[3;$Y;${X}t"
+    exit
+elif [[ "$1" == *[0-9]x[0-9]* ]]
+then
+    X=${1%x*}
+    Y=${1#*x}
+elif [[ "$1" == "max" ]]
+then
+    printf "\x1B[9;1t"
+    exit
+elif [[ "$1" == "rest" ]]
+then
+    printf "\x1B[9;0t"
+    exit
+elif [[ "$1" == "mon" ]]
+then
+    Y=62
+    X=156
+elif [[ "$1" == "big" ]]
+then
+    Y=62
+    X=311
+elif [[ "$1" == "help" ]]
+then
+    cat <<EOT >&2
+Usage: $0 ARGS
+where:
+  up     - De-iconify
+  min    - Iconify
+  mv X Y - Move to +X+Y
+  XxY    - Resize to XxY
+  max    - Maximise
+  rest   - Restore maximised
+  mon    - Resize to 1 monitor (same as maximised)
+  big    - Resize to biggest possible
+  help   - Blurt this nonsense
+
+EOT
+else
+    Y=24
+    X=80
+fi
+printf "\x1B[8;$Y;${X}t"
+
+exit
+cat <<EOT
+CSI Ps ; Ps ; Ps t
+Window manipulation (from dtterm, as well as extensions).
+These controls may be disabled using the allowWindowOps resource.
+Valid values for the first (and any additional parameters) are:
+
+Ps = 1                  : De-iconify window. 
+Ps = 2                  : Iconify window. 
+Ps = 3 ; x ; y          : Move window to [x, y]. 
+Ps = 4 ; height ; width : Resize the xterm window to height and width in pixels. 
+Ps = 5                  : Raise the xterm window to the front of the stacking order. 
+Ps = 6                  : Lower the xterm window to the bottom of the stacking order. 
+Ps = 7                  : Refresh the xterm window. 
+Ps = 8 ; height ; width : Resize the text area to [height;width] in characters. 
+Ps = 9 ; 0              : Restore maximized window. 
+Ps = 9 ; 1              : Maximize window (i.e., resize to screen size). 
+Ps = 11                 : Report xterm window state.
+                          If the xterm window is open (non-iconified), it returns CSI 1 t.
+                          If the xterm window is iconified, it returns CSI 2 t. 
+Ps = 13                 : Report xterm window position as CSI 3 ; x; yt 
+Ps = 14                 : Report xterm window in pixels as CSI 4 ; height ; width t 
+Ps = 18                 : Report the size of the text area in characters as CSI 8 ; height ; width t 
+Ps = 19                 : Report the size of the screen in characters as CSI 9 ; height ; width t 
+Ps = 20                 : Report xterm window's icon label as OSC L label ST 
+Ps = 21                 : Report xterm window's title as OSC l title ST 
+Ps >= 24                : Resize to Ps lines (DECSLPP)
+EOT
+

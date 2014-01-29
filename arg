@@ -30,6 +30,7 @@ backward ranges:
   -fSEP    - Input seperator
   =STRING= - Literal string "STRING"
   NF|c|-#  - Number of fields in line
+  -t       - Trim leading spaces on line
   -u       - This usage message
   -h       - Help (this usage message)
 
@@ -111,6 +112,11 @@ for my $argv ( @ARGV ) {
             $opts{s} = ',';
 
         }
+        elsif ( $chunk eq '-t' ) {
+
+            $opts{t} = 1;
+
+        }
         elsif ( $chunk eq '-u' || $chunk eq '-h' ) {
 
             usage;
@@ -142,6 +148,11 @@ for my $argv ( @ARGV ) {
 while ( <STDIN> ) {
 
     chomp;
+
+    if ( $opts{t} ) {
+        s/^\s+//g;
+    }
+
     my @line = split(/$sep/, $_);
     my @out;
 

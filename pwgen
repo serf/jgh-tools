@@ -72,6 +72,10 @@ for my $char (@range) {
 
 if ( $opts->{l} ) {
     $gen_len = $opts->{l};
+    if ( $gen_len > 172 ) {
+        $gen_len = 172;
+        print "172 characters is enough!\n";
+    }
 }
 
 sub gen_ck ();

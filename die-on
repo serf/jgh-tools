@@ -1,0 +1,18 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $choke = shift;
+die "Usage: $0 CHOKE\n" if ! $choke;
+
+while (<>) {
+
+    die "\n" if /$choke/;
+    print;
+    #
+
+}
+

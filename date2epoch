@@ -1,0 +1,63 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Time::Local;
+
+my @mon  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my %mon; @mon{@mon} = (1..12);
+
+# my @day  = qw( Sun Mon Tue Wed Thu Fri Sat );
+# my %dow; @dow{@day} = (0..6);
+
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+    = gmtime(time);
+
+my $y1900 = sprintf "%04d", $year + 1900;
+my $month = $mon +1;
+my $today = $mday;
+
+sub epoch2gmt ($) {
+    my $epoch = shift;
+    my @mon  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+        = gmtime($epoch);
+
+    return sprintf "%s %02d %02d:%02d (%04d)",
+        $mon[$mon], $mday, $hour, $min, $year + 1900;
+
+}
+
+while (defined (my $line = <>)) {
+
+    #
+    if ( $line =~ /(([A-Z][a-z][a-z])\s+(\d+)\s+(\d\d):(\d\d))/ ) {
+        my ($match,$m_month,$m_day,$m_hour,$m_min) = ($1,$2,$3,$4,$5);
+        my $m_mon = $mon{$m_month};
+        my $m_year;
+        if ( $m_mon > $mon+1 ) {
+            $m_year = $year-1;
+        } else {
+            $m_year = $year;
+        }
+        my $epoch = timegm( 0, $m_min, $m_hour, $m_day, $m_mon-1, $m_year );
+        # my $fixed = epoch2gmt($epoch);
+        $line =~ s/$match/$match $epoch/g;
+    } elsif ( $line =~ /(([A-Z][a-z][a-z])\s+(\d+)\s+(\d{4}))/ ) {
+        my ($match,$m_month,$m_day,$m_year) = ($1,$2,$3,$4);
+        my $m_mon = $mon{$m_month};
+        my $epoch = timegm( 0, 0, 0, $m_day, $m_mon-1, $m_year );
+        # my $fixed = epoch2gmt($epoch);
+        $line =~ s/$match/$match $epoch/g;
+    } elsif ( $line =~ /^total \d+/ ) {
+        next;
+    } else {
+        die "Bad line: '$line'";
+    }
+    print $line;
+
+}
+

@@ -72,13 +72,7 @@ for my $char (@range) {
 
 if ( $opts->{l} ) {
     $gen_len = $opts->{l};
-    if ( $gen_len > 172 ) {
-        $gen_len = 172;
-        print "172 characters is enough!\n";
-    }
 }
-
-sub gen_ck ();
 
 sub gen_ck () {
 
@@ -106,32 +100,40 @@ sub gen_ck () {
 
         }
 
+        #
+        # If the password doesn't have one of each set
+        # Throw it away & return empty handed.
+        #
+
         if ( ! $ok->{$r} ) {
 
-            #
-            # Recurse if our password doesn't have one of each set
-            #
             undef $plaintext;
             undef @plaintext;
-            gen_ck();
+            return 1;
 
         }
 
     }
 
+    #
+    # If our password has any repeated characters
+    # Throw it away & return empty handed.
+    #
+
     for my $p ( 0 .. $#plaintext ) {
-        # printf "%s:%s ", $plaintext[$p-1], $plaintext[$p];
+
         if ( $plaintext[$p] eq $plaintext[$p-1] ) {
             # print "\nGot $plaintext Recalculating...\n";
             undef $plaintext;
-            gen_ck();
+            return 1;
         }
     }
-    # print $/;
 
 }
 
-gen_ck;
+while ( ! defined $plaintext ) {
+    gen_ck;
+}
 
 print "New password: " if $opts->{v};
 
@@ -159,4 +161,12 @@ if ( $opts->{r} ) {
     }
     print $/;
 }
+
+=To do next:
+
+Generate the text in chunks (12 characters?)
+so that long passwords don't need to re-calc
+the whole thing when part is rejected.
+
+=cut
 

@@ -1,29 +1,51 @@
 #!/usr/bin/perl
 #
-#
+# John Harrison 2014-03-24 For Dave
 #
 use warnings;
 use strict;
+use Getopt::Std;
 
-my $age = shift;
-die "Usage: $0 TIME_IN_MINUTES\n" if ! $age;
+my %opts;
+getopts('w:d:h:m:s', \%opts);
+
+my $age = 0;
+
+$age += $opts{w} * 604800 if $opts{w};
+$age += $opts{d} * 86400 if $opts{d};
+$age += $opts{h} * 3600 if $opts{h};
+$age += $opts{m} * 60 if $opts{m};
+$age += $opts{s} if $opts{s};
+
+die <<EOE if ! $age;
+Usage: $0 TIME
+Where time can be any (or all of):
+  -w WEEKS
+  -d DAYS
+  -h HOURS
+  -m MINUTES
+  -s SECONDS
+
+(e.g. 'newer -d 4 -h 6 -m 23' will list files newer than 4 days, 6 hours & 23 minutes.)
+EOE
+
 my $time = time;
-
 #
 #
 #
 my $this_dir = '.';
+my %files;
 opendir(my $dir_fh, $this_dir) || die "Can't opendir '$this_dir': $!\n";
-my @files = grep { /^./ && -f "$this_dir/$_" } readdir($dir_fh);
-closedir $dir_fh;
-
-for my $file ( @files ) {
-
+for my $file ( grep { /^./ && -f "$this_dir/$_" } readdir($dir_fh) ) {
     my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
         $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
-
-    if ( $mtime > $time - $age * 60 ) {
-        print "$file\n";
+    if ( $mtime > $time - $age ) {
+        $files{$file} = $mtime;
     }
-
 }
+closedir $dir_fh;
+
+for my $file (sort { $files{$a} <=> $files{$b} } keys %files) {
+    print "$file\n";
+}
+

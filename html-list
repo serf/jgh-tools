@@ -22,17 +22,29 @@ print qq~<?xml version="1.0" encoding="iso-8859-1"?>
   <body>
 ~ if ! $opt_h;
 
-print "    <ul>\n";
-
+my $link_last = 0;
 while (<>) {
     chomp;
-    s{^(.*)$}{      <li><a href="$1">$1</a></li>}g;
-    print "$_\n";
+    if ( /^\s*$/ ) {
+        if ( $link_last ) {
+            print qq~    </ul>\n~;
+            $link_last = 0;
+        } else {
+            print $/;
+        }
+    } elsif ( m{://} ) {
+        if ( $link_last == 0 ) {
+            print "    <ul>\n";
+        }
+        s{^(.*)$}{      <li><a href="$1">$1</a></li>}g;
+        print "$_\n";
+        $link_last = 1;
+    } else {
+        print "    <p>$_</p>\n";
+    }
 }
 
-print qq~    </ul>\n~;
-
-print qq~    </ul>
+print qq~
   </body>
 </html>
 ~ if ! $opt_h;

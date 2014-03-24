@@ -1,0 +1,16 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+while (defined (my $line = <>)) {
+
+    #
+    next if $line =~ /^\s*#/;
+    $line =~ s/#.*$//g;
+    print $line;
+
+}
+

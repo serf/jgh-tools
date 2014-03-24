@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+while (defined (my $line = <>)) {
+
+    #
+    chomp $line;
+    if ( $line =~ /^\s*((\w+,)+\w+)\s*$/ ) {
+        # Group data
+        my $csv = $1;
+        my @members = split(/,/,$csv);
+        print join(',',sort @members);
+    } elsif ( $line =~ /^(\w+::\d+:)((\w+,)+\w+)$/ ) {
+        # /etc/group line
+        my ($group,$csv) = ($1, $2);
+        my @members = split(/,/,$csv);
+        print $group, join(',',sort @members);
+    } elsif ( $line =~ /^((%?\w+\s*,\s*)+%?\w+)(\s+LOCAL=.*)$/ ) {
+        # sudoers perms line
+        my ($csv,$sudo) = ($1, $2);
+        my @members = split(/,/,$csv);
+        print join(',',sort @members), $sudo;
+    } elsif ( $line =~ /^(User_Alias\s+\w+\s*=\s*)((%?\w+\s*,\s*)+%?\w+)\s*$/ ) {
+        # sudoers User_Alias line
+        my ($sudo,$csv) = ($1, $2);
+        $csv =~ s/ //g;
+        my @members = split(/,/,$csv);
+        print $sudo, join(',',sort @members);
+    } elsif ( $line =~ /^\s*$/ ) {
+        next;
+    } else {
+        print "Bad group data: '$line'\n";
+    }
+
+}
+

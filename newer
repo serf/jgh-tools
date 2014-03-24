@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my $age = shift;
+die "Usage: $0 TIME_IN_MINUTES\n" if ! $age;
+my $time = time;
+
+#
+#
+#
+my $this_dir = '.';
+opendir(my $dir_fh, $this_dir) || die "Can't opendir '$this_dir': $!\n";
+my @files = grep { /^./ && -f "$this_dir/$_" } readdir($dir_fh);
+closedir $dir_fh;
+
+for my $file ( @files ) {
+
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+
+    if ( $mtime > $time - $age * 60 ) {
+        print "$file\n";
+    }
+
+}

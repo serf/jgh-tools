@@ -48,7 +48,11 @@ FILE: for my $file ( grep { /^./ && -f "$path/$_" } readdir($dir_fh) ) {
     my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
         $atime,$mtime,$ctime,$blksize,$blocks) = stat("$path/$file");
     if ( $mtime > $time - $age ) {
-        $files{$file} = $mtime;
+        if ( $opts{p} ) {
+            $files{"$path/$file"} = $mtime;
+        } else {
+            $files{$file} = $mtime;
+        }
     }
 }
 closedir $dir_fh;

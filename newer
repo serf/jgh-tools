@@ -7,7 +7,7 @@ use strict;
 use Getopt::Std;
 
 my %opts;
-getopts('w:d:h:m:s', \%opts);
+getopts('w:d:h:m:s:f:p:', \%opts);
 
 my $age = 0;
 
@@ -26,6 +26,9 @@ Where time can be any (or all of):
   -m MINUTES
   -s SECONDS
 
+  -f FILENAME_MATCH (Uses Perl regular expression syntax.)
+  -p PATH (defaults to ".")
+
 (e.g. 'newer -d 4 -h 6 -m 23' will list files newer than 4 days, 6 hours & 23 minutes.)
 EOE
 
@@ -33,12 +36,17 @@ my $time = time;
 #
 #
 #
-my $this_dir = '.';
+my $path = '.';
+$path = $opts{p} if $opts{p};
+
 my %files;
-opendir(my $dir_fh, $this_dir) || die "Can't opendir '$this_dir': $!\n";
-for my $file ( grep { /^./ && -f "$this_dir/$_" } readdir($dir_fh) ) {
+opendir(my $dir_fh, $path) || die "Can't opendir '$path': $!\n";
+FILE: for my $file ( grep { /^./ && -f "$path/$_" } readdir($dir_fh) ) {
+    if ( $opts{f} ) {
+        next FILE if $file !~ /$opts{f}/;
+    }
     my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
-        $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat("$path/$file");
     if ( $mtime > $time - $age ) {
         $files{$file} = $mtime;
     }

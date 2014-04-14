@@ -1,0 +1,115 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Getopt::Std;
+
+my $data;
+
+my %opts;
+getopts('df:hlrs:', \%opts);
+
+if ( $opts{h} ) {
+    die <<EOT;
+Usage: $0 [-f NUM] [-d|-l] [-r] [-s] [-h]
+Where:
+
+  -d - Sort field 1 ( from 'du -h' )
+  -f - field to sort on ( default column is 0 )
+  -h - Show this help
+  -l - Sort field 4 ( from 'ls -lh' )
+  -r - Reverse sort
+  -s - Next field to sort on
+
+EOT
+}
+
+my $field = 0;
+if ( $opts{d} ) {
+    $field = 1;
+} elsif ( $opts{l} ) {
+    $field = 4;
+} elsif ( $opts{f} ) {
+    $field = $opts{f};
+}
+
+my %mult = (
+    b => 1,
+    K => 1024,
+    M => 1048576,    # 1024 ** 2
+    G => 1073741824, # 1024 ** 3
+);
+
+while (defined (my $line = <>)) {
+
+    #
+    my $tmp = $line;
+    $tmp =~ s/^\s+//g;
+    my @line = (split/\s+/, $tmp);
+    chomp $line;
+    if ( $line =~ /^total \d+$/ ) {
+        next;
+    } elsif ( $line =~ /^\s*$/ ) {
+        next;
+    } elsif ( ! defined $line[$field] ) {
+        die "No field $field in '$line'\n";
+    } elsif ( $line[$field] =~ /^([\d\.]+)([KMG])$/ ) {
+        my ($num,$mult) = ($1, $2);
+        my $key = $num * $mult{$mult};
+        push @{$data->{$key}}, $line;
+    } elsif ( $line[$field] =~ /^(\d+)$/ ) {
+        push @{$data->{$1}}, $line;
+    } else {
+        chomp $line;
+        die "No size in field $field of '$line'\n  (got $line[$field])\n";
+    }
+
+}
+
+sub by_size {
+    if ( $opts{r} ) {
+        return $b <=> $a;
+    } else {
+        return $a <=> $b;
+    }
+}
+
+sub next_field {
+
+    my @line_a = split(/\s+/, $a);
+    my @line_b = split(/\s+/, $b);
+
+    my ($val_a, $val_b);
+
+    if ( $opts{r} ) {
+        $val_a = $line_b[$opts{s}];
+        $val_b = $line_a[$opts{s}];
+    } else {
+        $val_a = $line_a[$opts{s}];
+        $val_b = $line_b[$opts{s}];
+    }
+
+    if ( $val_a =~ /^\d+$/ && $val_b =~ /^\d+$/ ) {
+        return $val_a <=> $val_b;
+    } else {
+        return $val_a cmp $val_b;
+    }
+
+}
+
+for my $num ( sort by_size keys %{$data} ) {
+
+    if ( $opts{s} ) {
+        for my $line ( sort next_field ( @{$data->{$num}} ) ) {
+            print "$line\n";
+        }
+    } else {
+        for my $line ( @{$data->{$num}} ) {
+            print "$line\n";
+        }
+    }
+
+}
+

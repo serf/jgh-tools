@@ -3,6 +3,12 @@
 SRC_FILE=$1
 DEST_DIR=$2
 
+if [[ -z "$DEST_DIR" ]]
+then
+    echo "Usage: $0 SOURCE_FILE DESTINATION_DIRECTORY"
+    exit 1
+fi
+
 SRC_DIR=$(dirname $SRC_FILE)
 SRC_BASE=$(basename $SRC_FILE)
 

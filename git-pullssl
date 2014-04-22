@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#
+# You don't need GIT_SSL_NO_VERIFY this if you do:
+# git config --global http.sslverify "false"
+# Maybe
+# git config --global core.askpass ""
+# works for SSH_ASKPASS too
+#
+SSH_ASKPASS='' GIT_SSL_NO_VERIFY=true git pull

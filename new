@@ -11,6 +11,7 @@ Usage: $0 [-h] [-d] [-f] [-c] [-o] [-u]
   where:
       -d = code for reading a directory (from perldoc -f readdir)
       -f = code for reading a file.
+      -w = code for writing to a file.
       -c = specify file on command line
       -h = skip header (hash bang, warnings & strictness pragmas)
            (i.e. just generate inline snippet)
@@ -25,7 +26,7 @@ EOT
 exit 1;
 }
 
-if ( ! $h ) {
+if ( ! $h && ! $w ) {
 
     if ( $o ) {
 
@@ -44,7 +45,13 @@ if ( $d ) {
 
     print "#\n#\n#\nmy \$some_dir = '/some/dir';\n";
 
-    if ( $o ) {
+    $indent = 4;
+
+    if ( $w ) {
+
+        $indent = 0;
+
+    } elsif ( $o ) {
 
 print <<'EOT';
 opendir(DIR_FH, $some_dir) || die "Can't opendir '$some_dir': $!\n";
@@ -62,13 +69,11 @@ EOT
 
     }
 
-    $indent = 4;
-
 }
 
 $f = 1 if $x;
 
-if ( $f ) {
+if ( $f || $w ) {
 
     my $file;
 
@@ -99,15 +104,20 @@ if ( $f ) {
         $file = sprintf qq~\nopen (FILE, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <FILE>)) {\n\n    #\n\n}\nclose FILE;\n\n";
 
-    }
-    else {
+    } elsif ( $w ) {
+
+        $file = sprintf qq~\nopen (my \$output_fh, '>', "$file_path")~ .
+            qq~ || die "Can't write to '$file_path': \$!\\n";\n~ .
+            "# print \$output_fh \$data;\nclose \$output_fh;\n\n";
+
+    } else {
 
         $file = sprintf qq~\nopen (my \$file_fh, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <\$file_fh>)) {\n\n    #\n\n}\nclose \$file_fh;\n\n";
 
     }
 
-    if ( $indent ) {
+    if ( $indent && ! $w ) {
 
         my $ind = " " x $indent;
         $file =~ s/\n(.)/\n$ind$1/g;

@@ -48,8 +48,8 @@ my $car = '-';
 
 # Find format
 if ( $opts{f} ) {
-   $col = 7;
-   $car = ' ';
+   $col = 6;
+   $car = '[0-9]';
 } elsif ( $opts{c} ) {
    $col = $opts{c} -1;
    $car = '.';

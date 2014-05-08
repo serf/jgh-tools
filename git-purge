@@ -1,4 +1,9 @@
 #!/bin/bash
 
-git filter-branch --force --index-filter "git rm --cached --ignore-unmatch $1" --prune-empty --tag-name-filter cat -- --all
+if [[ "$1" = "--force" ]]
+then
+    git filter-branch --force --index-filter "git rm --cached --ignore-unmatch $2" --prune-empty --tag-name-filter cat -- --all
+else
+    echo "Please just use: git rm $2; git commit $2; or you will have to merge on next pull"
+fi
 

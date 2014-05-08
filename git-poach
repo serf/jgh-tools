@@ -18,7 +18,13 @@ then
     exit 1
 fi
 
-pushd $SRC_DIR
+cd $SRC_DIR
 
-git log --pretty=email --patch-with-stat --full-index --binary --reverse -- $SRC_BASE | (popd $DEST_DIR && git am)
+git log --pretty=email --patch-with-stat --full-index --binary --reverse -- $SRC_BASE > ~/.git.tmp.$$
+
+cd $DEST_DIR
+
+git am < ~/.git.tmp.$$
+
+rm ~/.git.tmp.$$
 

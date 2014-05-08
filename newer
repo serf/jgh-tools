@@ -24,15 +24,15 @@ if ( $opts{r} && -e $opts{r} ) {
 }
 
 die <<EOE if ! $age;
-Usage: $0 TIME
-Where time can be any (or all of):
+Usage: $0 [TIME|-r REFERENCE_FILE] [OPTIONS]
+Where TIME can be any (or all of):
   -w WEEKS
   -d DAYS
   -h HOURS
   -m MINUTES
   -s SECONDS
-
-  -r REFERENCE_FILE (use time of REFERENCE_FILE instead of TIME)
+or:
+  -r REFERENCE_FILE (uses time of REFERENCE_FILE instead of TIME)
   -f FILENAME_MATCH (Uses Perl regular expression syntax.)
   -p PATH (defaults to ".")
   -o Show older files rather than newer

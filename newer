@@ -7,7 +7,9 @@ use strict;
 use Getopt::Std;
 
 my %opts;
-getopts('w:d:h:m:s:f:p:', \%opts);
+getopts('w:d:h:m:s:f:p:r:', \%opts);
+
+my $time = time; 
 
 my $age = 0;
 
@@ -16,6 +18,10 @@ $age += $opts{d} * 86400 if $opts{d};
 $age += $opts{h} * 3600 if $opts{h};
 $age += $opts{m} * 60 if $opts{m};
 $age += $opts{s} if $opts{s};
+if ( $opts{r} && -e $opts{r} ) {
+    my $file_time = (stat($opts{r}))[9];
+    $age = $time - $file_time;
+}
 
 die <<EOE if ! $age;
 Usage: $0 TIME
@@ -26,13 +32,13 @@ Where time can be any (or all of):
   -m MINUTES
   -s SECONDS
 
+  -r REFERENCE_FILE (use time of REFERENCE_FILE instead of TIME)
   -f FILENAME_MATCH (Uses Perl regular expression syntax.)
   -p PATH (defaults to ".")
 
 (e.g. 'newer -d 4 -h 6 -m 23' will list files newer than 4 days, 6 hours & 23 minutes.)
 EOE
 
-my $time = time;
 #
 #
 #

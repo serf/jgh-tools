@@ -12,6 +12,12 @@ fi
 SRC_DIR=$(dirname $SRC_FILE)
 SRC_BASE=$(basename $SRC_FILE)
 
+if [[ -d $DEST_DIR/.git/rebase-apply ]]
+then
+    echo "ERROR: $DEST_DIR/.git/rebase-apply exists - aborting."
+    exit 1
+fi
+
 pushd $SRC_DIR
 
 git log --pretty=email --patch-with-stat --full-index --binary --reverse -- $SRC_BASE | (popd $DEST_DIR && git am)

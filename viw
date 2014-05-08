@@ -15,6 +15,20 @@ then
     EDITOR=/usr/bin/vim
 fi
 
+if [[ "$1" = "-c" ]]
+then
+    shift
+    if [[ -x /bin/cat ]]
+    then
+        EDITOR=/bin/cat
+    elif [[ -x /usr/bin/cat ]]
+    then
+        EDITOR=/usr/bin/cat
+    else
+        EDITOR=$(which cat)
+    fi
+fi
+
 COMMAND=$(which $@)
 
 if [[ -f ${COMMAND} ]]

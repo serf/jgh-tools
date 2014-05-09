@@ -36,7 +36,7 @@ EOT
 
 }
 
-my @fields = qw( dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks help head );
+my @fields = qw( dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks help head name );
 
 my (%opts, %all_opts);
 my $all_opts = \%all_opts;
@@ -71,8 +71,10 @@ if ( $opts{head} ) {
     $on = 0;
 }
 
+$on-- if $opts{name};
 if ( $on > 1 ) {
 
+    print "file : $file\n" if $opts{name};
     for my $i ( 0 .. 12 ) {
         print "$want->{$i} : $stat[$i]\n" if $want->{$i};
     }
@@ -80,7 +82,11 @@ if ( $on > 1 ) {
 } elsif ( $on == 1 ) {
 
     for my $i ( 0 .. 12 ) {
-        print $stat[$i], $/ if $want->{$i};
+        if ( $opts{name} ) {
+            print "$stat[$i] $file\n" if $want->{$i};
+        } else {
+            print $stat[$i], $/ if $want->{$i};
+        }
     }
 
 } else {

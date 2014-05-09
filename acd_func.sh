@@ -13,7 +13,8 @@ cd_func ()
   fi
 
   the_new_dir=$1
-  [[ -z $1 ]] && the_new_dir=$HOME
+  [[ $# = 0 ]] && the_new_dir=$HOME
+  # [[ -z $1 ]] && the_new_dir=$HOME
 
   if [[ ${the_new_dir:0:1} == '-' ]]; then
     #

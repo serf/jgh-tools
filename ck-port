@@ -43,7 +43,9 @@ if ( $socket ) {
     # I want to die for the exit code, but also see the output
     #
     open(STDERR, ">&STDOUT") || die "Can't dup STDOUT: $!\n";
-    die "$myname: Can't connect to '$opts{host}:$opts{port}': $!\n";
+    my $reason = $!;
+    $reason = 'Timeout' if $reason eq 'Illegal seek';
+    die "$myname: Can't connect to '$opts{host}:$opts{port}': $reason\n";
 
 }
 

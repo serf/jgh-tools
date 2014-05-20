@@ -5,22 +5,38 @@
 #
 use warnings;
 use strict;
+use Getopt::Long;
 
-my ($input_file, $exclude_file) = (shift, shift);
+my %opts;
+GetOptions(
+    'input=s'   => \$opts{input},
+    'exclude=s' => \$opts{exclude},
+    'usage'     => \$opts{help},
+    'help'      => \$opts{help},
+);
 
-die "Usage: $0 INPUT EXCLUDE\n" if ! $exclude_file;
+my ($arg_1, $arg_2) = (shift, shift);
+if ( ! $opts{input} ) {
+    $opts{input} = $arg_1 if $arg_1;
+}
+if ( ! $opts{exclude} ) {
+    $opts{exclude} = $arg_2 if $arg_2;
+}
+
+die "Usage: $0 [-input] INPUT [-exclude] EXCLUDE\n"
+    if ! $opts{input} || ! $opts{exclude};
 
 my %exclude;
 
-open (my $exclude_fh, $exclude_file ) ||
-    die "Can't read exclude file '$exclude_file': $!\n";
+open (my $exclude_fh, $opts{exclude} ) ||
+    die "Can't read exclude file '$opts{exclude}': $!\n";
 while (defined(my $exclude = <$exclude_fh>)) {
     $exclude{$exclude} = 1;
 }
 close $exclude_fh;
 
-open (my $input_fh, $input_file) ||
-    die "Can't read input file '$input_file': $!\n";
+open (my $input_fh, $opts{input}) ||
+    die "Can't read input file '$opts{input}': $!\n";
 while (defined(my $input = <$input_fh>)) {
     print $input if ! $exclude{$input};
 }

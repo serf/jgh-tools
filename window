@@ -28,6 +28,11 @@ elif [[ "$1" == "rest" ]]
 then
     printf "\x1B[9;0t"
     exit
+elif [[ "$1" == "RESET" ]]
+then
+    printf "\x1B[9;0t"
+    Y=24
+    X=80
 elif [[ "$1" == "mon" ]]
 then
     Y=62
@@ -47,6 +52,7 @@ where:
   XxY    - Resize to XxY
   max    - Maximise
   rest   - Restore maximised
+  RESET  - Restore & resize to 80x24
   mon    - Resize to 1 monitor (same as maximised)
   big    - Resize to biggest possible
   help   - Blurt this nonsense

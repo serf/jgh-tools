@@ -24,6 +24,11 @@ while (defined (my $line = <>)) {
         my ($csv,$sudo) = ($1, $2);
         my @members = split(/,/,$csv);
         print join(',',sort @members), $sudo;
+    } elsif ( $line =~ /^((%?\w+\s*,\s*)+%?\w+)$/ ) {
+        # sudoers perms line
+        my ($csv,$sudo) = ($1, $2);
+        my @members = split(/,/,$csv);
+        print join(',',sort @members), $sudo;
     } elsif ( $line =~ /^(User_Alias\s+\w+\s*=\s*)((%?\w+\s*,\s*)+%?\w+)\s*$/ ) {
         # sudoers User_Alias line
         my ($sudo,$csv) = ($1, $2);

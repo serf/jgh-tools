@@ -17,6 +17,7 @@ sub read_file ($) {
 
         #
         $line =~ s/\xa3//g; # Pound symbol
+        $line =~ s/[A-Za-z]/ /g; # How did I get another pound?
         $line =~ s/\$//g;
         $line =~ s/,//g;
         $line =~ s/\s+/ /g;

@@ -2,8 +2,11 @@
 #
 # new - start a new Perl program with boilerplate code
 #
+use warnings;
+use strict;
 
 my $indent = 0;
+our ( $c, $d, $f, $h, $o, $p, $u, $w, $x, $l );
 
 if ( $u ) {
     print <<EOT;
@@ -12,6 +15,7 @@ Usage: $0 [-h] [-d] [-f] [-c] [-o] [-u]
       -d = code for reading a directory (from perldoc -f readdir)
       -f = code for reading a file.
       -w = code for writing to a file.
+      -p = code for writing to a pipe.
       -c = specify file on command line
       -h = skip header (hash bang, warnings & strictness pragmas)
            (i.e. just generate inline snippet)
@@ -19,6 +23,7 @@ Usage: $0 [-h] [-d] [-f] [-c] [-o] [-u]
            instead of Perl 5.6 or newer lexical filehandles & use warnings; pragma
       -u = This usage
       -x = Execute command (actually open a pipe from a command)
+      -l = Getopt::Long
 
   deprecated:
       -n = Was 'new' - now use '-o' for old
@@ -26,7 +31,7 @@ EOT
 exit 1;
 }
 
-if ( ! $h && ! $w ) {
+if ( ! $h && ! $w && ! $p ) {
 
     if ( $o ) {
 
@@ -41,13 +46,41 @@ if ( ! $h && ! $w ) {
 
 }
 
+if ( $l ) {
+
+print <<'EOL';
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "verbose" => \$opt->{v},
+    "help"  => \$opt->{h},
+    "usage" => \$opt->{h},
+)
+or die("$0: ERROR: invalid command line arguments\n");
+
+if ( $opt->{h} ) {
+
+    die <<EOT;
+Usage: $0 [-help] [-verbose] ARGUMENT
+  where
+    -help - show this help
+    -v - show verbose output
+EOT
+
+}
+EOL
+
+}
+
 if ( $d ) {
 
     print "#\n#\n#\nmy \$some_dir = '/some/dir';\n";
 
     $indent = 4;
 
-    if ( $w ) {
+    if ( $w && $p ) {
 
         $indent = 0;
 
@@ -73,9 +106,10 @@ EOT
 
 $f = 1 if $x;
 
-if ( $f || $w ) {
+if ( $f || $w || $p ) {
 
     my $file;
+    my $file_path;
 
     #
     # If you're reading a directory you will need that in the path to the file.
@@ -85,6 +119,10 @@ if ( $f || $w ) {
         $file_path = '$some_dir/$file';
 
     } elsif ( $x ) {
+
+        $file_path = '$cmd';
+
+    } elsif ( $p ) {
 
         $file_path = '$cmd';
 
@@ -110,6 +148,12 @@ if ( $f || $w ) {
             qq~ || die "Can't write to '$file_path': \$!\\n";\n~ .
             "# print \$output_fh \$data;\nclose \$output_fh;\n\n";
 
+    } elsif ( $p ) {
+
+        $file = sprintf qq~\nopen (my \$cmd_fh, "|$file_path")~ .
+            qq~ || die "Can't run '$file_path': \$!\\n";\n~ .
+            "# print \$cmd_fh \$data;\nclose \$cmd_fh;\n\n";
+
     } else {
 
         $file = sprintf qq~\nopen (my \$file_fh, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
@@ -133,7 +177,7 @@ if ( $f || $w ) {
         print $file;
 
     }
-    elsif ( $x ) {
+    elsif ( $x || $p ) {
 
         print q~my $cmd = '/bin/cmd';~, $/;
 

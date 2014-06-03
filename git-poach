@@ -32,7 +32,7 @@ fi
 
 cd $SRC_DIR
 
-git log --pretty=email --patch-with-stat --full-index --binary --reverse -- $SRC_BASE > ~/.git.tmp.$$
+git log --pretty=email --patch-with-stat --full-index --binary --reverse -- $SRC_FILE > ~/.git.tmp.$$
 
 cd $DEST_DIR
 

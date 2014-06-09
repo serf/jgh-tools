@@ -1,0 +1,58 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "nw" =>    \$opt->{nw},
+    "tftpboot" => \$opt->{tftpboot},
+    "help"  => \$opt->{h},
+    "usage" => \$opt->{h},
+)
+or die("$0: ERROR: invalid command line arguments\n");
+
+if ( $opt->{h} ) {
+
+    die <<EOT;
+Usage: $0 [-help] [-verbose] ARGUMENT
+  where
+    -help     - show this help
+    -nw       - Output in Network (switch) aaaa.bbbb.cccc format
+    -tftpboot - 
+EOT
+
+}
+
+my @macs;
+while (defined (my $line = <>)) {
+
+    #
+    if ( $line =~ /((\w+:){5}(\w+))/ ) {
+        push (@macs, $1);
+    }
+
+}
+
+for my $mac ( @macs ) {
+    my @clean;
+    for my $byte ( split(/:/, $mac) ) {
+        push(@clean, sprintf("%02s", lc($byte)));
+    }
+    my $cleaned = join(":", @clean);
+    if ( $opt->{nw} ) {
+        if ( $cleaned =~ /(..):(..):(..):(..):(..):(..)/ ) {
+            print "$1$2.$3$4.$5$6\n";
+        }
+    } elsif ( $opt->{tftpboot} ) {
+        print "1", join("", @clean), $/;
+    } else {
+        print "$cleaned\n";
+    }
+    @clean = [];
+}
+

@@ -11,6 +11,8 @@ my %opts;
 GetOptions(
     'input=s'   => \$opts{input},
     'exclude=s' => \$opts{exclude},
+    'f=s'       => \$opts{input},
+    'x=s'       => \$opts{exclude},
     'usage'     => \$opts{help},
     'help'      => \$opts{help},
 );

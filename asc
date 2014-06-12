@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+
+for my $c ( 32 .. 126 ) { print chr($c); };
+print $/;
+

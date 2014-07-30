@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+#
+# ignore
+# show lines in the data, which don't match any patterns in the ignore file.
+#
+use warnings;
+use strict;
+use Getopt::Long;
+
+my %opts;
+GetOptions(
+    'ignore=s'   => \$opts{ignore},
+    'data=s'     => \$opts{data},
+    'usage'     => \$opts{help},
+    'help'      => \$opts{help},
+);
+
+die "Usage: $0 [-ignore] IGNORE_FILE [-data] DATA_FILE\n"
+    if ! $opts{ignore} || ! $opts{data};
+
+my %ignore;
+
+open (my $ignore_fh, $opts{ignore} ) ||
+    die "Can't read ignore file '$opts{ignore}': $!\n";
+while (defined(my $line = <$ignore_fh>)) {
+    chomp $line;
+    next if $line =~ /^\s*$/;
+    $ignore{$line} = 1;
+}
+close $ignore_fh;
+
+open (my $input_fh, $opts{data}) ||
+    die "Can't read input file '$opts{data}': $!\n";
+LINE: while (defined(my $line = <$input_fh>)) {
+    for my $ignore ( sort keys %ignore ) {
+        next LINE if $line =~ /$ignore/;
+    }
+    print $line;
+}
+close $input_fh;
+

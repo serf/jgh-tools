@@ -9,10 +9,12 @@ use Getopt::Long;
 my $opt;
 
 GetOptions (
-    "nw" =>    \$opt->{nw},
+    "mac=s"    => \$opt->{mac},
+    "dhcp"     => \$opt->{dhcp},
+    "nw"       => \$opt->{nw},
     "tftpboot" => \$opt->{tftpboot},
-    "help"  => \$opt->{h},
-    "usage" => \$opt->{h},
+    "help"     => \$opt->{h},
+    "usage"    => \$opt->{h},
 )
 or die("$0: ERROR: invalid command line arguments\n");
 
@@ -21,21 +23,31 @@ if ( $opt->{h} ) {
     die <<EOT;
 Usage: $0 [-help] [-verbose] ARGUMENT
   where
-    -help     - show this help
+    -mac MAC  - MAC addres to clean
+    -dhcp     - Stripped of :s
     -nw       - Output in Network (switch) aaaa.bbbb.cccc format
-    -tftpboot - 
+    -tftpboot - Stripped, with leading 1
+    -help     - show this help
 EOT
 
 }
 
 my @macs;
-while (defined (my $line = <>)) {
 
-    #
-    if ( $line =~ /((\w+:){5}(\w+))/ ) {
-        push (@macs, $1);
+if ( $opt->{mac} ) {
+
+    push (@macs, $opt->{mac});
+
+} else {
+
+    while (defined (my $line = <>)) {
+
+        #
+        if ( $line =~ /((\w+:){5}(\w+))/ ) {
+            push (@macs, $1);
+        }
+
     }
-
 }
 
 for my $mac ( @macs ) {
@@ -48,8 +60,10 @@ for my $mac ( @macs ) {
         if ( $cleaned =~ /(..):(..):(..):(..):(..):(..)/ ) {
             print "$1$2.$3$4.$5$6\n";
         }
+    } elsif ( $opt->{dhcp} ) {
+        print join("", @clean), $/;
     } elsif ( $opt->{tftpboot} ) {
-        print "1", join("", @clean), $/;
+        print "01", join("", @clean), $/;
     } else {
         print "$cleaned\n";
     }

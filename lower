@@ -15,92 +15,98 @@ use strict;
 use locale;
 use File::Copy;
 
-my ($old_name, $new_name);
 
 sub do_rename ($$) {
 
-	$old_name = shift;
-	$new_name = shift;
+    my ($old_name, $new_name) = (shift, shift);
 
-	#
-	# "Rename $old_name to $new_name"
-	#
+    #
+    # "Rename $old_name to $new_name"
+    #
 
-	if ( -f $new_name ) {
+    if ( -f $new_name ) {
 
-		print STDERR "$new_name already exists, not overwriting.\n";
+        print STDERR "$new_name already exists, not overwriting.\n";
 
-	} else {
+    } else {
 
-		move("$old_name","$new_name");
-		print STDOUT "`$old_name' -> `$new_name'\n";
+        move("$old_name","$new_name");
+        print STDOUT "`$old_name' -> `$new_name'\n";
 
-	}
+    }
 
 }
 
-sub no_such_file {
+sub no_such_file($) {
 
-	$old_name = shift;
-	print STDERR "$0: cannot stat `$old_name': No such file or directory\n";
+    my $old_name = shift;
+    print STDERR "$0: cannot stat `$old_name': No such file or directory\n";
 
 }
 
 if ( $#ARGV >= 0 ) {
 
-	if ( $ARGV[0] =~ /-ext/ ) {
+    if ( $ARGV[0] =~ /-ext/ ) {
 
-		#
-		# Do extension only
-		# i.e. preserve multi-case filenames
-		# so: FileName.EXT -> FileName.ext
-		#
-		shift;
+        #
+        # Do extension only
+        # i.e. preserve multi-case filenames
+        # so: FileName.EXT -> FileName.ext
+        #
+        shift;
 
-		foreach $old_name (@ARGV) {
+        for my $old_name (@ARGV) {
 
-			if ( ! -f $old_name ) {
-				no_such_file($old_name);
-			}
+            if ( ! -f $old_name ) {
+                no_such_file($old_name);
+            }
 
-			if ( $old_name =~ /^(.*)\.([^\.]*)$/ ) {
+            if ( $old_name =~ /^(.*)\.([^\.]*)$/ ) {
 
-				my $file_name = $1;
-				my $extension = $2;
-				my $new_name = $file_name . "." . lc($extension);
-				do_rename($old_name,$new_name);
+                my $file_name = $1;
+                my $extension = $2;
+                my $new_name = $file_name . "." . lc($extension);
+                do_rename($old_name,$new_name);
 
-			} else {
+            } else {
 
-				die "$0: No extension found in filename.\n";
+                die "$0: No extension found in filename.\n";
 
-			}
+            }
 
-		}
+        }
 
-		exit;
+        exit;
 
-	} else {
+    } elsif ( $ARGV[0] =~ /-string/ ) {
 
-		#
-		# Whole filename.
-		#
-		foreach my $old_name (grep( -f $_, @ARGV)) {
+        shift;
 
-			my $new_name = lc($old_name);
-			do_rename($old_name,$new_name);
+        $_ = lc for @ARGV;
 
-		}
-		exit;
+        print "@ARGV\n";
 
-	}
+    } else {
+
+        #
+        # Whole filename.
+        #
+        for my $old_name (grep( -f $_, @ARGV)) {
+
+            my $new_name = lc($old_name);
+            do_rename($old_name,$new_name);
+
+        }
+        exit;
+
+    }
 
 } else {
 
-	while (<>) {
-		chomp();
-		print lc("$_\n");
-	}
+    while (defined (my $line = <>)) {
+        chomp($line);
+        print lc("$line\n");
+    }
 
 }
 

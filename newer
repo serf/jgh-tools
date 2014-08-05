@@ -48,7 +48,7 @@ $path = $opts{p} if $opts{p};
 
 my %files;
 opendir(my $dir_fh, $path) || die "Can't opendir '$path': $!\n";
-FILE: for my $file ( grep { /^./ && -f "$path/$_" } readdir($dir_fh) ) {
+FILE: for my $file ( grep { /^./ && -e "$path/$_" } readdir($dir_fh) ) {
     if ( $opts{f} ) {
         next FILE if $file !~ /$opts{f}/;
     }

@@ -45,6 +45,7 @@ if ( $socket ) {
     open(STDERR, ">&STDOUT") || die "Can't dup STDOUT: $!\n";
     my $reason = $!;
     $reason = 'Timeout' if $reason eq 'Illegal seek';
+    $reason = 'Host not found' if $reason eq 'Invalid argument';
     die "$myname: Can't connect to '$opts{host}:$opts{port}': $reason\n";
 
 }

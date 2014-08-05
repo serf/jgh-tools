@@ -21,7 +21,7 @@ while (defined (my $line = <>)) {
         print $group, join(',',sort @members);
     } elsif ( $line =~ /^((%?\w+\s*,\s*)+%?\w+)(\s+LOCAL=.*)$/ ) {
         # sudoers perms line
-        my ($csv,$sudo) = ($1, $2);
+        my ($csv,$sudo) = ($1, $3);
         my @members = split(/,/,$csv);
         print join(',',sort @members), $sudo;
     } elsif ( $line =~ /^((%?\w+\s*,\s*)+%?\w+)$/ ) {

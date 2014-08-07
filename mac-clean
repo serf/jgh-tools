@@ -56,15 +56,22 @@ for my $mac ( @macs ) {
         push(@clean, sprintf("%02s", lc($byte)));
     }
     my $cleaned = join(":", @clean);
+    my $done = 0;
     if ( $opt->{nw} ) {
         if ( $cleaned =~ /(..):(..):(..):(..):(..):(..)/ ) {
             print "$1$2.$3$4.$5$6\n";
+            $done = 1;
         }
-    } elsif ( $opt->{dhcp} ) {
+    }
+    if ( $opt->{dhcp} ) {
         print join("", @clean), $/;
-    } elsif ( $opt->{tftpboot} ) {
+        $done = 1;
+    }
+    if ( $opt->{tftpboot} ) {
         print "01", join("", @clean), $/;
-    } else {
+        $done = 1;
+    }
+    if ( ! $done ) {
         print "$cleaned\n";
     }
     @clean = [];

@@ -10,6 +10,7 @@ my $opt;
 
 GetOptions (
     "mac=s"    => \$opt->{mac},
+    "cleaned"  => \$opt->{cleaned},
     "dhcp"     => \$opt->{dhcp},
     "nw"       => \$opt->{nw},
     "tftpboot" => \$opt->{tftpboot},
@@ -24,6 +25,7 @@ if ( $opt->{h} ) {
 Usage: $0 [-help] [-verbose] ARGUMENT
   where
     -mac MAC  - MAC addres to clean
+    -cleaned  - Default
     -dhcp     - Stripped of :s
     -nw       - Output in Network (switch) aaaa.bbbb.cccc format
     -tftpboot - Stripped, with leading 1
@@ -71,7 +73,7 @@ for my $mac ( @macs ) {
         print "01", join("", @clean), $/;
         $done = 1;
     }
-    if ( ! $done ) {
+    if ( $opt->{cleaned} || $done == 0 ) {
         print "$cleaned\n";
     }
     @clean = [];

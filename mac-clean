@@ -85,5 +85,6 @@ for my $mac ( @macs ) {
         print "$cleaned\n";
     }
     @clean = [];
+    print $/ if ! $opt->{mac};
 }
 

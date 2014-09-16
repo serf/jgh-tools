@@ -38,8 +38,9 @@ if ( $opts{d} ) {
 my %mult = (
     b => 1,
     K => 1024,
-    M => 1048576,    # 1024 ** 2
-    G => 1073741824, # 1024 ** 3
+    M => 1048576,       # 1024 ** 2
+    G => 1073741824,    # 1024 ** 3
+    T => 1099511627776, # 1024 ^4
 );
 
 while (defined (my $line = <>)) {
@@ -55,7 +56,7 @@ while (defined (my $line = <>)) {
         next;
     } elsif ( ! defined $line[$field] ) {
         die "No field $field in '$line'\n";
-    } elsif ( $line[$field] =~ /^([\d\.]+)([KMG])$/ ) {
+    } elsif ( $line[$field] =~ /^([\d\.]+)([KMGT])$/ ) {
         my ($num,$mult) = ($1, $2);
         my $key = $num * $mult{$mult};
         push @{$data->{$key}}, $line;

@@ -1,0 +1,70 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+    = gmtime(time);
+
+my @mon  = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my %mon; @mon{@mon} = (0..11);
+
+my $this_year = $year + 1900;
+
+# 93970 6190210 -rw-r--r--   1 owner    group    6334401269 May 26 04:40 path/to/file.txt
+
+my $dates;
+
+while (defined (my $line = <>)) {
+
+    #
+    # Small numbers can have leading zero on Solaris
+    #
+    $line =~ s/^\s+//g;
+    my @line = split(/\s+/, $line);
+    if ( $line[0] !~ /^\d+$/ ) {
+        chomp $line;
+        die "Not in find -ls format: '$line'\n";
+    }
+    my ($yr, $mn, $dy, $tm);
+    $mn = $line[7];
+    $dy = $line[8];
+
+    if ( $line[9] =~ /^\d\d\d\d$/ ) {
+        $yr = $line[9];
+        $tm = '12:00';
+    } elsif ( $line[9] =~ /^\d\d:\d\d$/ ) {
+        $tm = $line[9];
+        # It's the start of the year
+        # You have files from the last 6 months
+        if ( $mon{$mn} > $mon ) {
+            $yr = $this_year -1;
+        } else {
+            $yr = $this_year;
+        }
+    } else {
+        die "Bad time/year field: '$line[9]'\n";
+    }
+    chomp $line;
+
+    @{$dates->{$yr}->{$mn}->{$dy}->{$tm}->{$line[10]}} = $line;
+
+}
+
+for my $yr ( sort keys %{$dates} ) {
+    for my $mn ( @mon ) {
+        if ( defined $dates->{$yr}->{$mn} ) {
+            for my $dy ( sort { $a <=> $b } keys %{$dates->{$yr}->{$mn}} ) {
+                print "$yr-$mn-$dy:\n";
+                for my $tm ( sort keys %{$dates->{$yr}->{$mn}->{$dy}} ) {
+                    for my $file ( sort keys %{$dates->{$yr}->{$mn}->{$dy}->{$tm}} ) {
+                        print ${$dates->{$yr}->{$mn}->{$dy}->{$tm}->{$file}}[0], $/;
+                    }
+                }
+            }
+        }
+    }
+}
+

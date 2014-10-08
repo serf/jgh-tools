@@ -54,22 +54,23 @@ use Getopt::Long;
 my $opt;
 
 GetOptions (
-    "verbose" => \$opt->{v},
-    "help"  => \$opt->{h},
-    "usage" => \$opt->{h},
+    "verbose" => \$opt->{verbose},
+    "help"    => \$opt->{usage},
+    "usage"   => \$opt->{usage},
 )
 or die("$0: ERROR: invalid command line arguments\n");
 
-if ( $opt->{h} ) {
+sub usage () {
 
     die <<EOT;
-Usage: $0 [-help] [-verbose] ARGUMENT
+Usage: $0 [-usage] [-verbose] ARGUMENT
   where
-    -help - show this help
-    -v - show verbose output
+    -help    - show this help
+    -verbose - show verbose output
 EOT
 
 }
+usage if $opt->{usage};
 EOL
 
 }

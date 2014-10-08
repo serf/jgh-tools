@@ -1,0 +1,205 @@
+#!/usr/bin/perl
+#
+# Get and set timestamps for files
+#
+use warnings;
+use strict;
+use Getopt::Long;
+use Data::Dumper;
+
+my $opt;
+
+GetOptions (
+    "file=s"       => \$opt->{file},
+    "filelist=s"   => \$opt->{filelist},
+    "check=s"      => \$opt->{check},
+    "restore=s"    => \$opt->{restore},
+    "atime"        => \$opt->{atime},
+    "verbose"      => \$opt->{verbose},
+    "help"         => \$opt->{usage},
+    "usage"        => \$opt->{usage},
+)
+or die("$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: $0 (options)
+  where
+    -file FILE     - print stamps for FILE
+    -filelist FILE - generate stamps for files in FILE
+    -check FILE    - check stamps against file (only mtime)
+    -restore FILE  - set stamps for files from times in FILE
+    -atime         - print atime as well
+    -help          - show this help
+    -verbose       - show verbose output
+EOT
+
+}
+usage if $opt->{usage};
+
+sub set_time ($$) {
+
+   my ($mtime, $file) = (shift,shift);
+   my $atime = $mtime;
+
+   if ( ! utime($atime, $mtime, $file) ) {
+       print STDERR "utime: Can't update '$file' $!\n";
+       return -1;
+   }
+
+}
+
+sub get_time($) {
+
+    my $file = shift;
+    my ($dev,$inode,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+    return ($atime,$mtime);
+
+}
+
+sub read_file_list($) {
+
+    my $file = shift;
+    my $files;
+
+    open (my $file_fh, "$file") || die "Can't read '$file': $!\n";
+    while (defined (my $line = <$file_fh>)) {
+
+        chomp $line;
+        if ( -f $line ) {
+            push @$files, $line;
+        }
+
+    }
+    close $file_fh;
+
+    return $files;
+
+}
+
+#    open $stamps_fh, '<&', \*STDIN or die "Can't dup STDIN:$!\n";
+
+sub read_stamps($) {
+
+    my $file = shift;
+    my $stamps;
+
+    open (my $file_fh, "$file") || die "Can't read '$file': $!\n";
+    while (defined (my $line = <$file_fh>)) {
+
+        chomp $line;
+        if ( $line =~ /^(\d+):(\d+)  (.*)$/ ) {
+            $stamps->{$3} = {
+                atime => $1,
+                mtime => $2,
+            };
+        } elsif ( $line =~ /^(\d+)  (.*)$/ ) {
+            $stamps->{$2} = {
+                mtime => $1,
+            };
+        }
+
+    }
+    close $file_fh;
+    return $stamps;
+
+}
+
+sub print_stamps($) {
+
+    my $files = shift;
+    for my $file ( @$files ) {
+
+        my ($atime,$mtime) = get_time($file);        
+
+        if ( $opt->{atime} ) {
+            print "$atime:$mtime  $file\n";
+        } else {
+            print "$mtime  $file\n";
+        }
+
+    }
+
+}
+
+if ( $opt->{file} ) {
+
+    my $files = [$opt->{file}];
+    print_stamps($files);
+
+} elsif ( $opt->{filelist} ) {
+
+    my $files = read_file_list($opt->{filelist});
+    print_stamps($files);
+
+} elsif ( $opt->{check} ) {
+
+    my $stamps = read_stamps($opt->{check});
+
+    my ($total,$changed,$failed);
+
+    for my $file ( sort keys %{$stamps} ) {
+
+        $total++;
+
+        if ( -f $file ) {
+
+            my ($atime,$mtime) = get_time($file);        
+
+            if ( $stamps->{$file}->{mtime} == $mtime ) {
+                print "$file: OK\n";
+            } else {
+                print "$file: CHANGED\n";
+                $changed++;
+            }
+
+        } else {
+
+            print STDERR "$0: $file: $!\n";
+            print "$file: FAILED open or read\n";
+            $failed++;
+
+        }
+    }
+
+    print "$0: WARNING: $failed of $total listed files could not be read\n" if $failed;
+    print "$0: WARNING: $changed of $total timestamps did NOT match\n" if $changed;
+
+} elsif ( $opt->{restore} ) {
+
+    my $stamps = read_stamps($opt->{restore});
+
+    my ($total,$missing,$failed);
+
+    for my $file ( sort keys %{$stamps} ) {
+
+        $total++;
+
+        if ( -f $file ) {
+
+            set_time( $stamps->{$file}->{mtime}, $file );        
+
+            if ( $? == 0 ) {
+                print "$file: OK\n";
+            } else {
+                print "$file: FAILED\n";
+                $failed++;
+            }
+
+        } else {
+
+            print STDERR "$0: $file: $!\n";
+            $missing++;
+
+        }
+    }
+
+    print "$0: WARNING: $failed of $total timestamps could not be set\n" if $failed;
+    print "$0: WARNING: $missing of $total files were not found\n" if $missing;
+
+} else {
+    usage;
+}
+

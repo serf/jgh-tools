@@ -8,8 +8,20 @@ use strict;
 
 use File::Copy;
 
-my $editor = '/usr/bin/vi';
-$editor = '/usr/bin/vim' if -x '/usr/bin/vim';
+my $editor;
+my @editors = (qw(
+    /usr/bin/vim
+    /usr/bin/vi
+    /bin/vim
+    /bin/vi
+    /bin/vim.exe
+));
+for my $ed ( @editors ) {
+    if ( -e $ed ) {
+        $editor = $ed;
+        last;
+    }
+}
 
 my @files = @ARGV;
 

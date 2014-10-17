@@ -208,7 +208,7 @@ for my $dir ( keys %{$hk} ) {
 
                     my $md5sum;
                     if ( $hk->{$dir}->{$mask}->{md5}->{do} ) {
-                        INFO && print "Doing md4sum '$dir/$file' ... ";
+                        INFO && print "Doing md5sum '$dir/$file' ... ";
                         open (my $file_fh, "$dir/$file") || die "Can't read '$dir/$file': $!\n";
                         binmode($file_fh);
                         $md5sum = Digest::MD5->new->addfile(*$file_fh)->hexdigest;

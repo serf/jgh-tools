@@ -73,6 +73,7 @@ while (defined (my $line = <$config_fh>)) {
         }
         elsif ( $criteria eq 'md5' ) {
             $hk->{$dir}->{$mask}->{md5}->{$value} = $action;
+            $hk->{$dir}->{$mask}->{md5}->{do} = 1;
         }
         else {
             die "Invalid criteria '$criteria' in [$line]\n";
@@ -206,7 +207,7 @@ for my $dir ( keys %{$hk} ) {
                     }
 
                     my $md5sum;
-                    if ( $hk->{$dir}->{$mask}->{md5} ) {
+                    if ( $hk->{$dir}->{$mask}->{md5}->{do} ) {
                         INFO && print "Doing md4sum '$dir/$file' ... ";
                         open (my $file_fh, "$dir/$file") || die "Can't read '$dir/$file': $!\n";
                         binmode($file_fh);

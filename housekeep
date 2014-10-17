@@ -1,0 +1,239 @@
+#!/usr/bin/perl
+#
+# 20140723 John Harrison
+#
+use warnings;
+use strict;
+use Getopt::Long;
+use Digest::MD5;
+use Data::Dumper;
+
+my $opt;
+
+GetOptions (
+    "config=s" => \$opt->{config},
+    "log=s"    => \$opt->{log},
+    "dryrun"   => \$opt->{dryrun},
+    "info"     => \$opt->{info},
+    "verbose"  => \$opt->{verbose},
+    "help"     => \$opt->{usage},
+    "usage"    => \$opt->{usage},
+)
+or die("$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: $0 -config CONFIG [-option]
+  where
+    -config=FILE - path to config file
+    -log=LOGFILE - file to log removed files to
+    -dryrun      - Do not remove files
+    -info        - show some debug
+    -verbose     - show verbose output
+    -usage|-help - show this help
+EOT
+
+}
+usage if $opt->{usage};
+
+if ( ! $opt->{config} ) {
+
+    print STDERR "$0: ERROR: You must specify the config file.\n";
+    usage();
+
+}
+
+my $time = time;
+
+my $hk;
+
+sub VERBOSE { $opt->{verbose} };
+sub INFO { $opt->{info} };
+
+open (my $config_fh, "$opt->{config}") || die "Can't read '$opt->{config}': $!\n";
+while (defined (my $line = <$config_fh>)) {
+
+    #
+    next if $line =~ /^\s*#/;
+    next if $line =~ /^\s*$/;
+    chomp $line;
+
+    if ( $line =~ /^([^:]+):([^:]+):([^:]+):([^:]+)$/ ) {
+        my ($dir, $mask, $age, $action) = ($1, $2, $3, $4);
+        $hk->{$dir}->{$mask}->{age}->{$age} = $action;
+    } elsif ( $line =~ /^([^:]+):([^:]+):([^:]+):([^:]+):([^:]+)$/ ) {
+        # path:mask:criteria:value:action
+        my ($dir, $mask, $criteria, $value, $action) = ($1, $2, $3, $4, $5);
+        if ( $criteria eq 'age' ) {
+            $hk->{$dir}->{$mask}->{age}->{$value} = $action;
+        }
+        elsif ( $criteria eq 'size' ) {
+            $hk->{$dir}->{$mask}->{size}->{$value} = $action;
+        }
+        elsif ( $criteria eq 'md5' ) {
+            $hk->{$dir}->{$mask}->{md5}->{$value} = $action;
+        }
+        else {
+            die "Invalid criteria '$criteria' in [$line]\n";
+        }
+    } else {
+        die "Invalid config line [$line]\n";
+    }
+
+}
+close $config_fh;
+
+my $log_fh;
+if ( $opt->{log} ) {
+    open ($log_fh, '>>', "$opt->{log}") || die "Can't write to '$opt->{log}': $!\n";
+}
+
+sub unlink_file($) {
+    my $file = shift;
+    if ( $opt->{dryrun} ) {
+        print $log_fh "Would rm $file\n" if $opt->{log};
+        print "Would rm $file\n";
+    } elsif ( unlink $file ) {
+        print $log_fh "rm $file\n" if $opt->{log};
+        print "rm $file\n";
+    } else {
+        die "Can't rm '$file': $!\n";
+    }
+}
+
+#
+# http://perlmonks.org/?node_id=895808
+#
+sub strmode ($) {
+    my $oct = shift;
+    my $bin = sprintf "%9b", $oct & 511;
+    $bin =~ y/01/\0\xff/;
+    $bin &= "rwxrwxrwx";
+    $bin =~ y/\0/-/;
+    my $type = qw(? c d b - l s)[$oct>>13];
+    return "$type$bin";
+}
+
+my $stat;
+sub check_action($$) {
+
+    my ($action, $file) = (shift,shift);
+
+    if ( $action eq 'rm' ) {
+        unlink_file($file);
+        return 1;
+    } elsif ( $action eq 'ls' ) {
+        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+            = localtime($stat->{mtime});
+        printf "%s %3d %-8s %-8s %7d %4d-%02d-%02d %02d:%02d:%02d %s\n",
+            strmode($stat->{mode}),
+            $stat->{nlink},
+            (getpwuid($stat->{uid}))[0],
+            (getgrgid($stat->{gid}))[0],
+            $stat->{size},
+            $year + 1900, $mon + 1, $mday, $hour, $min, $sec,
+            $file;
+        return 1;
+    } elsif ( $action eq 'gzip' ) {
+        system("/bin/gzip", "-9", $file) == 0
+            or die "system gzip -9 '$file': $?\n";
+        return 1;
+    } else {
+        print "$file Action [$action]\n";
+        return -1;
+    }
+
+}
+
+my $statfields = [qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks)];
+
+for my $dir ( keys %{$hk} ) {
+    INFO && print "Dir: [$dir]\n";
+    for my $mask ( keys %{$hk->{$dir}} ) {
+        INFO && print "  Mask: [$mask]\n";
+        opendir(my $dir_fh, $dir) || die "Can't opendir '$dir': $!\n";
+        (my $glob = $mask) =~ s/\*/\.*/g;
+        FILE: for my $file ( readdir($dir_fh) ) {
+            if ( $file =~ /^$glob$/ ) {
+                VERBOSE && print "$file ";
+                if ( -f "$dir/$file" ) {
+                    #
+                    # Check age
+                    #
+                    my %stat;
+                    @stat{ qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) }
+                        = stat("$dir/$file");
+                    $stat = \%stat;
+                    # print Dumper $stat;
+
+                    for my $age ( reverse sort keys %{$hk->{$dir}->{$mask}->{age}} ) {
+                        if ( $stat->{mtime} < $time - $age ) {
+                            my $res = check_action( $hk->{$dir}->{$mask}->{age}->{$age}, "$dir/$file" );
+                            if ( $res == 1 ) {
+                                INFO && print " (mtime = $stat->{mtime})\n";
+                                next FILE;
+                            }
+                        } else {
+                            VERBOSE && print " (new)\n";
+                        }
+                    }
+                    for my $c_size ( reverse sort keys %{$hk->{$dir}->{$mask}->{size}} ) {
+                        if ( $c_size =~ /^=(\d+)$/ ) {
+                            if ( $stat->{size} != $1 ) {
+                                next FILE;
+                            }
+                        } elsif ( $c_size =~ /^>(\d+)$/ ) {
+                            if ( $stat->{size} <= $1 ) {
+                                next FILE;
+                            }
+                        } elsif ( $c_size =~ /^<(\d+)$/ ) {
+                            if ( $stat->{size} >= $1 ) {
+                                next FILE;
+                            }
+                        } elsif ( $c_size =~ /^0$/ ) {
+                            if ( $stat->{size} != 0 ) {
+                                next FILE;
+                            }
+                        } else {
+                            die "Invalid size spec :$c_size: (can use size:0,<X,=X,>X) (size = $stat->{size})\n";
+                        }
+                        my $res = check_action( $hk->{$dir}->{$mask}->{size}->{$c_size}, "$dir/$file" );
+                        if ( $res == 1 ) {
+                            INFO && print "size:$c_size: (size = $stat->{size})\n";
+                            next FILE;
+                        }
+                    }
+
+                    my $md5sum;
+                    if ( $hk->{$dir}->{$mask}->{md5} ) {
+                        INFO && print "Doing md4sum '$dir/$file' ... ";
+                        open (my $file_fh, "$dir/$file") || die "Can't read '$dir/$file': $!\n";
+                        binmode($file_fh);
+                        $md5sum = Digest::MD5->new->addfile(*$file_fh)->hexdigest;
+                        close $file_fh;
+                        INFO && print "$md5sum\n";
+                    }
+
+                    for my $c_md5 ( keys %{$hk->{$dir}->{$mask}->{md5}} ) {
+                        #
+                        if ( $c_md5 ne $md5sum ) {
+                            next FILE;
+                        }
+                        my $res = check_action( $hk->{$dir}->{$mask}->{md5}->{$md5sum}, "$dir/$file" );
+                        if ( $res == 1 ) {
+                            INFO && print "md5:$c_md5: (md5sum = $md5sum)\n";
+                            next FILE;
+                        }
+                    }
+                }
+            } else {
+                VERBOSE && print "Ign '$file'\n";
+            }
+        }
+        closedir $dir_fh;
+    }
+}
+
+close $log_fh if $opt->{log};
+

@@ -68,7 +68,7 @@ sub read_file_list($) {
     while (defined (my $line = <$file_fh>)) {
 
         chomp $line;
-        if ( -f $line ) {
+        if ( -e $line ) {
             push @$files, $line;
         }
 
@@ -144,7 +144,7 @@ if ( $opt->{file} ) {
 
         $total++;
 
-        if ( -f $file ) {
+        if ( -e $file ) {
 
             my ($atime,$mtime) = get_time($file);        
 

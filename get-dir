@@ -56,7 +56,7 @@ sub by_dir {
 if ( ! $search ) {
 
     for my $alias ( sort by_dir keys %dirs ) {
-        printf "%${len}s => %s\n", $alias, $dirs{$alias} if $dirs{$alias};
+        printf "%${len}s => %s\n", $alias, $dirs{$alias} if -d $dirs{$alias};
     }
 
 }
@@ -93,7 +93,7 @@ gd () {
     * )
         _GO_DIR=$(get-dir $1)
         if [ -d "$_GO_DIR" ];then
-            cd "$_GO_DIR"
+            cd_func "$_GO_DIR"
             printf "cd "
             pwd
         fi

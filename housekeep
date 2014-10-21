@@ -142,7 +142,7 @@ sub unlink_file($) {
         print $log_fh "rm $file\n" if $opt->{log};
         print "rm $file\n";
     } else {
-        die "Can't rm '$file': $!\n";
+        print "WARNING: Can't rm '$file': $!\n";
     }
 }
 

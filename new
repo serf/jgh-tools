@@ -88,7 +88,7 @@ if ( $d ) {
     } elsif ( $o ) {
 
 print <<'EOT';
-opendir(DIR_FH, $some_dir) || die "Can't opendir '$some_dir': $!\n";
+opendir(DIR_FH, $some_dir) || die "$0: Can't opendir '$some_dir': $!\n";
 my @files = grep { /^./ && -f "$some_dir/$_" } readdir(DIR_FH);
 closedir DIR_FH;
 EOT
@@ -96,7 +96,7 @@ EOT
     } else {
 
 print <<'EOT';
-opendir(my $dir_fh, $some_dir) || die "Can't opendir '$some_dir': $!\n";
+opendir(my $dir_fh, $some_dir) || die "$0: Can't opendir '$some_dir': $!\n";
 my @files = grep { /^./ && -f "$some_dir/$_" } readdir($dir_fh);
 closedir $dir_fh;
 EOT
@@ -135,29 +135,29 @@ if ( $f || $w || $p ) {
 
     if ( $x ) {
 
-        $file = sprintf qq~\nopen (my \$cmd_fh, "$file_path|") || die "Can't run '$file_path': \$!\\n";\n~ .
+        $file = sprintf qq~\nopen (my \$cmd_fh, "$file_path|") || die "$0: Can't run '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <\$cmd_fh>)) {\n\n    #\n\n}\nclose \$cmd_fh;\n\n";
 
     } elsif ( $o ) {
 
-        $file = sprintf qq~\nopen (FILE, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
+        $file = sprintf qq~\nopen (FILE, "$file_path") || die "$0: Can't read '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <FILE>)) {\n\n    #\n\n}\nclose FILE;\n\n";
 
     } elsif ( $w ) {
 
         $file = sprintf qq~\nopen (my \$output_fh, '>', "$file_path")~ .
-            qq~ || die "Can't write to '$file_path': \$!\\n";\n~ .
+            qq~ || die "$0: Can't write to '$file_path': \$!\\n";\n~ .
             "# print \$output_fh \$data;\nclose \$output_fh;\n\n";
 
     } elsif ( $p ) {
 
         $file = sprintf qq~\nopen (my \$cmd_fh, "|$file_path")~ .
-            qq~ || die "Can't run '$file_path': \$!\\n";\n~ .
+            qq~ || die "$0: Can't run '$file_path': \$!\\n";\n~ .
             "# print \$cmd_fh \$data;\nclose \$cmd_fh;\n\n";
 
     } else {
 
-        $file = sprintf qq~\nopen (my \$file_fh, "$file_path") || die "Can't read '$file_path': \$!\\n";\n~ .
+        $file = sprintf qq~\nopen (my \$file_fh, "$file_path") || die "$0: Can't read '$file_path': \$!\\n";\n~ .
             "while (defined (my \$line = <\$file_fh>)) {\n\n    #\n\n}\nclose \$file_fh;\n\n";
 
     }

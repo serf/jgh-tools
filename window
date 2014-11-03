@@ -41,6 +41,11 @@ elif [[ "$1" == "big" ]]
 then
     Y=62
     X=311
+elif [[ "$1" == "title" ]]
+then
+    shift
+    echo -ne "\033]0;$@\007"
+    exit
 elif [[ "$1" == "help" ]]
 then
     cat <<EOT >&2

@@ -11,7 +11,8 @@ my %opts;
 GetOptions(
     'input=s'   => \$opts{input},
     'exclude=s' => \$opts{exclude},
-    'f=s'       => \$opts{input},
+    'file=s'    => \$opts{input},
+    'data=s'    => \$opts{input},
     'x=s'       => \$opts{exclude},
     'usage'     => \$opts{help},
     'help'      => \$opts{help},
@@ -31,14 +32,14 @@ die "Usage: $0 [-input] INPUT [-exclude] EXCLUDE\n"
 my %exclude;
 
 open (my $exclude_fh, $opts{exclude} ) ||
-    die "Can't read exclude file '$opts{exclude}': $!\n";
+    die "$0: Can't read exclude file '$opts{exclude}': $!\n";
 while (defined(my $exclude = <$exclude_fh>)) {
     $exclude{$exclude} = 1;
 }
 close $exclude_fh;
 
 open (my $input_fh, $opts{input}) ||
-    die "Can't read input file '$opts{input}': $!\n";
+    die "$0: Can't read input file '$opts{input}': $!\n";
 while (defined(my $input = <$input_fh>)) {
     print $input if ! $exclude{$input};
 }

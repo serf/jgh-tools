@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 die "Usage: $0 MATHS\n" unless(@ARGV);
-for(@ARGV){s/x/*/g;s/,//g;s/v/sqrt /g;s/\^/**/g}
+for(@ARGV){s/x/*/g;s/X/x/g;s/,//g;s/v/sqrt /g;s/\^/**/g}
 
 print eval(join('',@ARGV)),$/;
 

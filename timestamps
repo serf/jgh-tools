@@ -10,14 +10,16 @@ use Data::Dumper;
 my $opt;
 
 GetOptions (
-    "file=s"       => \$opt->{file},
-    "filelist=s"   => \$opt->{filelist},
-    "check=s"      => \$opt->{check},
-    "restore=s"    => \$opt->{restore},
-    "atime"        => \$opt->{atime},
-    "verbose"      => \$opt->{verbose},
-    "help"         => \$opt->{usage},
-    "usage"        => \$opt->{usage},
+    "file=s"           => \$opt->{file},
+    "timesize=s"       => \$opt->{timesize},
+    "filelist=s"       => \$opt->{filelist},
+    "timesizelist=s"   => \$opt->{timesizelist},
+    "check=s"          => \$opt->{check},
+    "restore=s"        => \$opt->{restore},
+    "atime"            => \$opt->{atime},
+    "verbose"          => \$opt->{verbose},
+    "help"             => \$opt->{usage},
+    "usage"            => \$opt->{usage},
 )
 or die("$0: ERROR: invalid command line arguments\n");
 
@@ -26,13 +28,15 @@ sub usage () {
     die <<EOT;
 Usage: $0 (options)
   where
-    -file FILE     - print stamps for FILE
-    -filelist FILE - generate stamps for files in FILE
-    -check FILE    - check stamps against file (only mtime)
-    -restore FILE  - set stamps for files from times in FILE
-    -atime         - print atime as well
-    -help          - show this help
-    -verbose       - show verbose output
+    -file FILE         - print stamp for FILE
+    -timesize FILE     - print stamp and size for FILE
+    -filelist FILE     - print stamps for files in FILE
+    -timesizelist FILE - print stamps and sizes for files in FILE
+    -check FILE        - check stamps against file (only mtime)
+    -restore FILE      - set stamps for files from times in FILE
+    -atime             - print atime as well
+    -help              - show this help
+    -verbose           - show verbose output
 EOT
 
 }
@@ -55,7 +59,7 @@ sub get_time($) {
     my $file = shift;
     my ($dev,$inode,$mode,$nlink,$uid,$gid,$rdev,$size,
         $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
-    return ($atime,$mtime);
+    return ($atime,$mtime,$size);
 
 }
 
@@ -112,12 +116,29 @@ sub print_stamps($) {
     my $files = shift;
     for my $file ( @$files ) {
 
-        my ($atime,$mtime) = get_time($file);        
+        my ($atime,$mtime,$size) = get_time($file);
 
         if ( $opt->{atime} ) {
             print "$atime:$mtime  $file\n";
         } else {
             print "$mtime  $file\n";
+        }
+
+    }
+
+}
+
+sub print_timesize($) {
+
+    my $files = shift;
+    for my $file ( @$files ) {
+
+        my ($atime,$mtime,$size) = get_time($file);
+
+        if ( $opt->{atime} ) {
+            print "$atime:$mtime:$size:$file\n";
+        } else {
+            print "$mtime:$size:$file\n";
         }
 
     }
@@ -134,6 +155,16 @@ if ( $opt->{file} ) {
     my $files = read_file_list($opt->{filelist});
     print_stamps($files);
 
+} elsif ( $opt->{timesize} ) {
+
+    my $files = [$opt->{timesize}];
+    print_timesize($files);
+
+} elsif ( $opt->{timesizelist} ) {
+
+    my $files = read_file_list($opt->{timesizelist});
+    print_timesize($files);
+
 } elsif ( $opt->{check} ) {
 
     my $stamps = read_stamps($opt->{check});
@@ -146,7 +177,7 @@ if ( $opt->{file} ) {
 
         if ( -e $file ) {
 
-            my ($atime,$mtime) = get_time($file);        
+            my ($atime,$mtime,$size) = get_time($file);
 
             if ( $stamps->{$file}->{mtime} == $mtime ) {
                 print "$file: OK\n";
@@ -179,7 +210,7 @@ if ( $opt->{file} ) {
 
         if ( -f $file ) {
 
-            set_time( $stamps->{$file}->{mtime}, $file );        
+            set_time( $stamps->{$file}->{mtime}, $file );
 
             if ( $? == 0 ) {
                 print "$file: OK\n";

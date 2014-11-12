@@ -1,0 +1,18 @@
+#!/bin/bash
+
+MATCH_STRING=$1
+REPLACE_WITH=$2
+FILE_LIST=$3
+NOW=$(date +'%y%m%d.%H%M%S')
+
+if [[ ! -f ${FILE_LIST} ]]
+then
+    echo "Usage: $0 MATCH_STRING REPLACE_WITH FILE_LIST"
+    exit
+fi
+
+for EDIT_FILE in $(cat ${FILE_LIST})
+do
+    perl -pi.${NOW} -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
+done
+

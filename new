@@ -88,7 +88,7 @@ if ( $d ) {
     } elsif ( $o ) {
 
 print <<'EOT';
-opendir(DIR_FH, $some_dir) || die "\$0: Can't opendir '$some_dir': $!\n";
+opendir(DIR_FH, $some_dir) || die "$0: Can't opendir '$some_dir': $!\n";
 my @files = grep { /^./ && -f "$some_dir/$_" } readdir(DIR_FH);
 closedir DIR_FH;
 EOT
@@ -96,7 +96,7 @@ EOT
     } else {
 
 print <<'EOT';
-opendir(my $dir_fh, $some_dir) || die "\$0: Can't opendir '$some_dir': $!\n";
+opendir(my $dir_fh, $some_dir) || die "$0: Can't opendir '$some_dir': $!\n";
 my @files = grep { /^./ && -f "$some_dir/$_" } readdir($dir_fh);
 closedir $dir_fh;
 EOT
@@ -173,7 +173,7 @@ if ( $f || $w || $p ) {
     elsif ( $c ) {
 
         print q~my $file = shift;~, $/,
-            q~die "Usage: \$0 FILE\n" if ! $file;~, $/;
+            q~die "Usage: $0 FILE\n" if ! $file;~, $/;
 
         print $file;
 

@@ -3,6 +3,7 @@
 MATCH_STRING=$1
 REPLACE_WITH=$2
 EDIT_FILE=$3
+NOW=$(date +'%y%m%d.%H%M%S')
 
-perl -pi.$$ -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
+perl -pi.${NOW} -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
 

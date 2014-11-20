@@ -7,4 +7,4 @@
 # git config --global core.askpass ""
 # works for SSH_ASKPASS too
 #
-SSH_ASKPASS='' GIT_SSL_NO_VERIFY=true git push
+SSH_ASKPASS='' GIT_SSL_NO_VERIFY=true git push $@

@@ -202,7 +202,7 @@ if ( $opt->{file} ) {
 
 } elsif ( $opt->{checksize} ) {
 
-    my $stamps = read_stamps($opt->{check});
+    my $stamps = read_stamps($opt->{checksize});
 
     my ($total,$changed,$failed);
 

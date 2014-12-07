@@ -96,7 +96,7 @@ sub read_stamps($) {
     while (defined (my $line = <$file_fh>)) {
 
         chomp $line;
-        if ( $line =~ /^(\d+):(\d+)  (.*)$/ ) {
+        if ( $line =~ /^(\d+):(\d+):(.*)$/ ) {
             $stamps->{$3} = {
                 atime => $1,
                 mtime => $2,
@@ -105,6 +105,8 @@ sub read_stamps($) {
             $stamps->{$2} = {
                 mtime => $1,
             };
+        } else {
+            die "$file format error: '$line'\n";
         }
 
     }

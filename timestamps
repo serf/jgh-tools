@@ -56,7 +56,7 @@ sub set_time ($$) {
 
 }
 
-sub get_time($) {
+sub stat_file($) {
 
     my $file = shift;
     my ($dev,$inode,$mode,$nlink,$uid,$gid,$rdev,$size,
@@ -118,7 +118,7 @@ sub print_stamps($) {
     my $files = shift;
     for my $file ( @$files ) {
 
-        my ($atime,$mtime,$size) = get_time($file);
+        my ($atime,$mtime,$size) = stat_file($file);
 
         if ( $opt->{atime} ) {
             print "$atime:$mtime  $file\n";
@@ -135,7 +135,7 @@ sub print_timesize($) {
     my $files = shift;
     for my $file ( @$files ) {
 
-        my ($atime,$mtime,$size) = get_time($file);
+        my ($atime,$mtime,$size) = stat_file($file);
 
         if ( $opt->{atime} ) {
             print "$atime:$mtime:$size:$file\n";
@@ -179,7 +179,7 @@ if ( $opt->{file} ) {
 
         if ( -e $file ) {
 
-            my ($atime,$mtime,$size) = get_time($file);
+            my ($atime,$mtime,$size) = stat_file($file);
 
             if ( $stamps->{$file}->{mtime} == $mtime ) {
                 print "$file: OK\n";
@@ -212,7 +212,7 @@ if ( $opt->{file} ) {
 
         if ( -e $file ) {
 
-            my ($atime,$mtime,$size) = get_time($file);
+            my ($atime,$mtime,$size) = stat_file($file);
 
             if ( $stamps->{$file}->{size} == $size ) {
                 print "$file: OK\n";

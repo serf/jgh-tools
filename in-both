@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+#
+# in-both
+# find lines which are in both the first file and the second.
+#
+use warnings;
+use strict;
+use Getopt::Long;
+
+my %opts;
+GetOptions(
+    'big=s'     => \$opts{big},
+    'small=s'   => \$opts{small},
+    'usage'     => \$opts{help},
+    'help'      => \$opts{help},
+);
+
+my ($arg_1, $arg_2) = (shift, shift);
+if ( ! $opts{small} ) {
+    $opts{small} = $arg_1 if $arg_1;
+}
+if ( ! $opts{big} ) {
+    $opts{big} = $arg_2 if $arg_2;
+}
+
+die "Usage: $0 [-small] SMALL [-big] BIG\n"
+    if ! $opts{small} || ! $opts{big};
+
+my %small;
+
+open (my $small_fh, $opts{small} ) ||
+    die "$0: Can't read small file '$opts{small}': $!\n";
+while (defined(my $small = <$small_fh>)) {
+    $small{$small} = 1;
+}
+close $small_fh;
+
+open (my $big_fh, $opts{big}) ||
+    die "$0: Can't read big file '$opts{big}': $!\n";
+while (defined(my $big = <$big_fh>)) {
+    print $big if $small{$big};
+}
+close $big_fh;
+

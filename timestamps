@@ -15,6 +15,7 @@ GetOptions (
     "filelist=s"       => \$opt->{filelist},
     "timesizelist=s"   => \$opt->{timesizelist},
     "check=s"          => \$opt->{check},
+    "checksize=s"      => \$opt->{checksize},
     "restore=s"        => \$opt->{restore},
     "atime"            => \$opt->{atime},
     "verbose"          => \$opt->{verbose},
@@ -33,6 +34,7 @@ Usage: $0 (options)
     -filelist FILE     - print stamps for files in FILE
     -timesizelist FILE - print stamps and sizes for files in FILE
     -check FILE        - check stamps against file (only mtime)
+    -checksize FILE    - check sizes against file
     -restore FILE      - set stamps for files from times in FILE
     -atime             - print atime as well
     -help              - show this help
@@ -197,6 +199,39 @@ if ( $opt->{file} ) {
 
     print "$0: WARNING: $failed of $total listed files could not be read\n" if $failed;
     print "$0: WARNING: $changed of $total timestamps did NOT match\n" if $changed;
+
+} elsif ( $opt->{checksize} ) {
+
+    my $stamps = read_stamps($opt->{check});
+
+    my ($total,$changed,$failed);
+
+    for my $file ( sort keys %{$stamps} ) {
+
+        $total++;
+
+        if ( -e $file ) {
+
+            my ($atime,$mtime,$size) = get_time($file);
+
+            if ( $stamps->{$file}->{size} == $size ) {
+                print "$file: OK\n";
+            } else {
+                print "$file: CHANGED\n";
+                $changed++;
+            }
+
+        } else {
+
+            print STDERR "$0: $file: $!\n";
+            print "$file: FAILED open or read\n";
+            $failed++;
+
+        }
+    }
+
+    print "$0: WARNING: $failed of $total listed files could not be read\n" if $failed;
+    print "$0: WARNING: $changed of $total sizes did NOT match\n" if $changed;
 
 } elsif ( $opt->{restore} ) {
 

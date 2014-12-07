@@ -96,7 +96,18 @@ sub read_stamps($) {
     while (defined (my $line = <$file_fh>)) {
 
         chomp $line;
-        if ( $line =~ /^(\d+):(\d+):(.*)$/ ) {
+        if ( $line =~ /^(\d+):(\d+):(\d+):(.*)$/ ) {
+            $stamps->{$4} = {
+                atime => $1,
+                mtime => $2,
+                size  => $3,
+            };
+        } elsif ( $line =~ /^(\d+):(\d+):(.*)$/ ) {
+            $stamps->{$3} = {
+                mtime => $1,
+                size  => $2,
+            };
+        } elsif ( $line =~ /^(\d+):(\d+) (.*)$/ ) {
             $stamps->{$3} = {
                 atime => $1,
                 mtime => $2,
@@ -216,6 +227,9 @@ if ( $opt->{file} ) {
 
             my ($atime,$mtime,$size) = stat_file($file);
 
+            if ( ! defined $stamps->{$file}->{size} ) {
+                die "No size for '$file' in $opt->{checksize}\n";
+            }
             if ( $stamps->{$file}->{size} == $size ) {
                 print "$file: OK\n";
             } else {

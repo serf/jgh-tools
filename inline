@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 MATCH_STRING=$1
 REPLACE_WITH=$2

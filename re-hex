@@ -1,8 +1,10 @@
-#!/usr/bin/perl -ws
+#!/usr/bin/perl
 #
 # re-hex - hexadecimal encode an ASCII url (i.e. with % signs)
 # By John
 #
+use warnings;
+use strict;
 
 our ($d,$s);
 my $base = 'H';
@@ -10,9 +12,9 @@ if ( $d ) {
     $base = 'C';
 }
 
-while (<>){
+while (defined(<>)){
     chomp();
-    for $char (split(//,$_)) {
+    for my $char (split(//,$_)) {
         if ( $s ) {
             if ( $char =~ /^[^\w\.\:\/]$/ ) {
                 printf "%%%s", unpack("$base*",$char);

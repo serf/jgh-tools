@@ -87,6 +87,8 @@ sub to_secs ($) {
         $secs = $1 * 2629800;
     } elsif ( $spec =~ /^(\d+)y(ea)r(s)?$/ ) {
         $secs = $1 * 31557600;
+    } else {
+        die "$0: ERROR: Unrecognised spec '$spec' in '$opt->{config}'\n";
     }
     return $secs;
 }
@@ -210,7 +212,6 @@ for my $dir ( keys %{$hk} ) {
                         = stat("$dir/$file");
                     $stat = \%stat;
                     # print Dumper $stat;
-
 
                     for my $age ( sort { $b <=> $a } keys %{$hk->{$dir}->{$mask}->{age}} ) {
                         my $newest = $time - $age;

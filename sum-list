@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Digest::MD5;
+
+my $list = shift;
+die "Usage: $0 FILE_LIST\n" if ! $list;
+
+my $ctx = Digest::MD5->new;
+
+open (my $list_fh, "$list") || die "Can't read '$list': $!\n";
+while (defined (my $file = <$list_fh>)) {
+
+    #
+    chomp $file;
+
+    if ( -f $file ) {
+
+        open (my $file_fh, $file) || die "Can't read '$file': $!\n";
+        $ctx->addfile($file_fh);
+        close $file_fh;
+        my $digest = $ctx->hexdigest;
+        print "$digest  $file\n";
+
+    }
+
+}
+close $list_fh;
+

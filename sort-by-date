@@ -4,6 +4,34 @@
 #
 use warnings;
 use strict;
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "verbose"   => \$opt->{verbose},
+    "help"      => \$opt->{usage},
+    "usage"     => \$opt->{usage},
+    "netbackup" => \$opt->{netbackup},
+    "ls"        => \$opt->{ls},
+    "find"      => \$opt->{find},
+)
+or die("\$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: \$0 [-usage] [-verbose] ARGUMENT
+  where
+    -help      - show this help
+    -verbose   - show verbose output
+    -netbackup - netbackup bplist format
+    -ls        - ls -l format
+    -find      - find -ls format
+EOT
+
+}
+usage if $opt->{usage};
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
     = gmtime(time);
@@ -13,9 +41,35 @@ my %mon; @mon{@mon} = (0..11);
 
 my $this_year = $year + 1900;
 
-# 93970 6190210 -rw-r--r--   1 owner    group    6334401269 May 26 04:40 path/to/file.txt
+=input examples
+find -ls
+12345678 12345 drwxr-xr-x   1 owner group    0 Jan 02  2013 path/to/file.txt
+93970  6190210 -rw-r--r--   1 owner    group    6334401269 May 26 04:40 path/to/file.txt
+7 8 9
+--
+ls -l
+drwxr-xr-x 1 owner group 0 Jan 02  2013 path/to/file.txt
+5 6 7
+--
+netbackup bplist
+drwxr-xr-x owner  group               0 Jan 02  2013 path/to/file.txt
+4 5 6
+=cut
 
 my $dates;
+
+my $off = 7;
+if ( $opt->{find} ) {
+    $off = 7;
+} elsif ( $opt->{ls} ) {
+    $off = 5;
+} elsif ( $opt->{netbackup} ) {
+    $off = 4;
+}
+
+my $dom = $off+1;
+my $yt = $off+2;
+my $file = $off+3;
 
 while (defined (my $line = <>)) {
 
@@ -24,19 +78,19 @@ while (defined (my $line = <>)) {
     #
     $line =~ s/^\s+//g;
     my @line = split(/\s+/, $line);
-    if ( $line[0] !~ /^\d+$/ ) {
+    if ( $line[$off] !~ /^[A-Z][a-z][a-z]$/ ) {
         chomp $line;
         die "Not in find -ls format: '$line'\n";
     }
     my ($yr, $mn, $dy, $tm);
-    $mn = $line[7];
-    $dy = $line[8];
+    $mn = $line[$off];
+    $dy = $line[$dom];
 
-    if ( $line[9] =~ /^\d\d\d\d$/ ) {
-        $yr = $line[9];
+    if ( $line[$yt] =~ /^\d\d\d\d$/ ) {
+        $yr = $line[$yt];
         $tm = '12:00';
-    } elsif ( $line[9] =~ /^\d\d:\d\d$/ ) {
-        $tm = $line[9];
+    } elsif ( $line[$yt] =~ /^\d\d:\d\d$/ ) {
+        $tm = $line[$yt];
         # It's the start of the year
         # You have files from the last 6 months
         if ( $mon{$mn} > $mon ) {
@@ -45,11 +99,11 @@ while (defined (my $line = <>)) {
             $yr = $this_year;
         }
     } else {
-        die "Bad time/year field: '$line[9]'\n";
+        die "Bad time/year field: '$line[$yt]'\n";
     }
     chomp $line;
 
-    @{$dates->{$yr}->{$mn}->{$dy}->{$tm}->{$line[10]}} = $line;
+    @{$dates->{$yr}->{$mn}->{$dy}->{$tm}->{$line[$file]}} = $line;
 
 }
 

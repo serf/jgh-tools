@@ -118,7 +118,7 @@ sub get_file ($) {
         PeerAddr  => $host,
         PeerPort  => $port,
     );
-    DEBUG && print STDERR "Connected OK\n";
+    DEBUG && print STDERR "Connected OK\n" if $socket;
 
     die "$0: Can't connect to 'http://$host': $!\n" if ! $socket;
     $socket->autoflush(1);

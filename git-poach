@@ -1,6 +1,13 @@
 #!/bin/bash
 
 SOURCE=$1
+DEST=$2
+if [[ -z "$DEST" ]]
+then
+    echo "Usage: $0 SOURCE_FILE DESTINATION_DIRECTORY"
+    exit 1
+fi
+
 SRC_DIRNAME=$(dirname $SOURCE)
 SRC_FILE=$(basename $SOURCE)
 
@@ -10,25 +17,26 @@ ck_dir () {
         cd $1
         /bin/pwd
     else
-        echo "ERROR: '$1' not a directory"
+        echo >&2 "ERROR: '$1' not a directory"
         exit 1
     fi
 }
 
-SRC_DIR=$(ck_dir $SRC_DIRNAME)
-DEST_DIR=$(ck_dir "$2")
-
+DEST_DIR=$(ck_dir "$DEST")
 if [[ -z "$DEST_DIR" ]]
 then
     echo "Usage: $0 SOURCE_FILE DESTINATION_DIRECTORY"
     exit 1
 fi
 
+
 if [[ -d $DEST_DIR/.git/rebase-apply ]]
 then
     echo "ERROR: $DEST_DIR/.git/rebase-apply exists - aborting."
     exit 1
 fi
+
+SRC_DIR=$(ck_dir $SRC_DIRNAME)
 
 cd $SRC_DIR
 

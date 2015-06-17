@@ -9,6 +9,7 @@ use Getopt::Long;
 my $opt;
 
 GetOptions (
+    "reverse"   => \$opt->{reverse},
     "verbose"   => \$opt->{verbose},
     "help"      => \$opt->{usage},
     "usage"     => \$opt->{usage},
@@ -28,6 +29,7 @@ Usage: \$0 [-usage] [-verbose] ARGUMENT
     -netbackup - netbackup bplist format
     -ls        - ls -l format
     -find      - find -ls format
+    -reverse   - sort dates in reverse
 EOT
 
 }
@@ -77,6 +79,7 @@ while (defined (my $line = <>)) {
     # Small numbers can have leading zero on Solaris
     #
     $line =~ s/^\s+//g;
+    next if $line =~ /^total \d+$/;
     my @line = split(/\s+/, $line);
     if ( $line[$off] !~ /^[A-Z][a-z][a-z]$/ ) {
         chomp $line;
@@ -107,12 +110,39 @@ while (defined (my $line = <>)) {
 
 }
 
-for my $yr ( sort keys %{$dates} ) {
+sub order_times ($$) {
+    my ($a, $b) = (shift,shift);
+    if ( $opt->{reverse} ) {
+        return $b cmp $a;
+    } else {
+        return $a cmp $b;
+    }
+}
+
+sub order_day ($$) {
+    my ($a, $b) = (shift,shift);
+    if ( $opt->{reverse} ) {
+        return $b <=> $a;
+    } else {
+        return $a <=> $b;
+    }
+}
+
+sub order_years ($$) {
+    my ($a, $b) = (shift,shift);
+    if ( $opt->{reverse} ) {
+        return $b <=> $a;
+    } else {
+        return $a <=> $b;
+    }
+}
+
+for my $yr ( sort order_years keys %{$dates} ) {
     for my $mn ( @mon ) {
         if ( defined $dates->{$yr}->{$mn} ) {
-            for my $dy ( sort { $a <=> $b } keys %{$dates->{$yr}->{$mn}} ) {
+            for my $dy ( sort order_day keys %{$dates->{$yr}->{$mn}} ) {
                 print "$yr-$mn-$dy:\n";
-                for my $tm ( sort keys %{$dates->{$yr}->{$mn}->{$dy}} ) {
+                for my $tm ( sort order_times keys %{$dates->{$yr}->{$mn}->{$dy}} ) { # Times
                     for my $file ( sort keys %{$dates->{$yr}->{$mn}->{$dy}->{$tm}} ) {
                         print ${$dates->{$yr}->{$mn}->{$dy}->{$tm}->{$file}}[0], $/;
                     }

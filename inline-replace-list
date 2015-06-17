@@ -13,6 +13,11 @@ fi
 
 for EDIT_FILE in $(cat ${FILE_LIST})
 do
-    perl -pi.${NOW} -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
+    if [[ "$NO_BACKUP" = 1 ]]
+    then
+        perl -pi -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
+    else
+        perl -pi.${NOW} -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
+    fi
 done
 

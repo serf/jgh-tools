@@ -71,7 +71,7 @@ die "Usage: $0 [-cefmntuv] [filenames]\n"
 die <<EOT if ($usage);
 Usage: $0 [-cefmntuv] [filenames]
  -c --cp --copy (default - for safety)
- -e --ext (remove)
+ -e --ext (put timestamp after extension)
  -f --force (overwrite existing files)
  -m --mv --move (most useful) :o)
  -n --no-act

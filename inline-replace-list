@@ -3,12 +3,18 @@
 MATCH_STRING=$1
 REPLACE_WITH=$2
 FILE_LIST=$3
+OPTIONS=$4
 NOW=$(date +'%y%m%d.%H%M%S')
 
 if [[ ! -f ${FILE_LIST} ]]
 then
     echo "Usage: $0 MATCH_STRING REPLACE_WITH FILE_LIST"
     exit
+fi
+
+if [[ "$OPTIONS" = "-nb" ]]
+then
+    NO_BACKUP=1
 fi
 
 for EDIT_FILE in $(cat ${FILE_LIST})

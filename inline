@@ -1,15 +1,149 @@
-#!/bin/bash
+#!/usr/bin/perl
+#
+# Thanks ikegami : http://stackoverflow.com/questions/12786194/
+#
+use warnings;
+use strict;
+use File::Copy;
+use Getopt::Long;
 
-NOW=$(date +'.%y%m%d.%H%M%S')
-if [[ "$1" = "-n" ]]
-then
-    shift
-    NOW=""
-fi
+my $opt;
 
-MATCH_STRING=$1
-REPLACE_WITH=$2
-EDIT_FILE=$3
+GetOptions (
+    "verbose" => \$opt->{verbose},
+    "help"    => \$opt->{usage},
+    "usage"   => \$opt->{usage},
+    "old=s"   => \$opt->{old},
+    "new=s"   => \$opt->{new},
+    "file=s"  => \$opt->{file},
+    "list=s"  => \$opt->{list},
+    "backup"  => \$opt->{backup},
+    "now"     => \$opt->{now},
+)
+or die("\$0: ERROR: invalid command line arguments\n");
 
-perl -pi${NOW} -e "s{${MATCH_STRING}}{${REPLACE_WITH}}g" ${EDIT_FILE}
+sub usage () {
+
+    die <<EOT;
+Usage: \$0 [-usage] [-verbose] ARGUMENT
+  where
+    -help    - show this help
+    -verbose - show verbose output
+    -old     -
+    -new     -
+    -file    -
+    -list    -
+    -backup  -
+    -today   -
+EOT
+
+}
+usage if $opt->{usage};
+
+sub VERBOSE { $opt->{verbose}; }
+
+my @files;
+
+if ( $opt->{file} ) {
+
+    @files = ($opt->{file});
+
+} elsif ( $opt->{list} ) {
+
+    open (my $file_fh, "$opt->{list}") || die "$0: Can't read '$opt->{list}': $!\n";
+    while (defined (my $line = <$file_fh>)) {
+
+        #
+        chomp $line;
+        push @files, $line;
+
+    }
+    close $file_fh;
+
+} elsif ( $#ARGV == 2 ) {
+
+    ($opt->{old}, $opt->{new}, $opt->{file}) = @ARGV;
+    @files = ($opt->{file});
+    
+} else {
+
+    die "Usage: $0 [-file FILE|-list LIST_OF_FILES] -old STRING_TO_FIND -new STRING_TO_REPLACE_WITH\n";
+
+}
+
+sub time_to_dtg ($) {
+
+    my $time = shift;
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) =
+        localtime($time);
+
+    return sprintf "%4i%02i%02i.%02i%02i%02i",
+        1900 + $year, 1 + $mon, $mday, $hour, $min, $sec;
+
+}
+
+for my $file (@files ) {
+
+    if ( $opt->{backup} or $opt->{now} ) {
+
+        my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+            $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+
+        my $dtg;
+
+        if ( $opt->{backup} ) {
+
+            $dtg = time_to_dtg($mtime);
+
+        } elsif ( $opt->{now} ) {
+
+            $dtg = time_to_dtg(time);
+
+        }
+
+        my $target = "$file.$dtg";
+
+        if ( copy("$file", "$target") ) {
+
+            my $atime=(stat($file))[8];
+
+            if ( utime($atime,$mtime,$target) ) {
+
+                my $mode=(stat($file))[2];
+
+                if ( chmod $mode, $target ) {
+
+                    VERBOSE && print "`$file' -> `$target' + $file\n";
+
+                } else {
+
+                    die "$0: Can't set perms on '$target': $!\n";
+
+                }
+
+            }
+            else {
+
+                die "$0: Can't set atime & mtime of '$target': $!\n";
+
+            }
+
+        }
+        else {
+
+            die  "Can't backup `$file' to `$target': $!\n";
+
+        }
+
+    }
+
+    local @ARGV = $file;
+    local $^I = '';
+    while (<>) {
+        s/$opt->{old}/$opt->{new}/g;
+        print;
+    }
+
+}
 

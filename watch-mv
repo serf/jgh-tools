@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "verbose" => \$opt->{verbose},
+    "from=s"  => \$opt->{from},
+    "to=s"    => \$opt->{to},
+    "help"    => \$opt->{usage},
+    "usage"   => \$opt->{usage},
+)
+or die("\$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: \$0 [-usage] [-verbose] ARGUMENT
+  where
+    -from    - file copying from
+    -to      - file copying to
+    -help    - show this help
+    -verbose - show verbose output
+EOT
+
+}
+usage if $opt->{usage};
+
+sub get_size ($) {
+    my $filename = shift;
+    my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat($filename)
+    or die "Can't stat '$filename': $!\n";
+    return $size;
+}
+
+die "Usage: $0 -from FROM_FILE -to TO_FILE\n" if ! $opt->{from} || ! $opt->{to};
+
+while ( 1 ) {
+    my $from_size = get_size($opt->{from});
+    my $to_size = get_size($opt->{to});
+    printf "%d%%\n", ($to_size / $from_size) * 100;
+    sleep 1
+}
+

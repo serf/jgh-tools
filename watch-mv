@@ -45,7 +45,9 @@ die "Usage: $0 -from FROM_FILE -to TO_FILE\n" if ! $opt->{from} || ! $opt->{to};
 while ( 1 ) {
     my $from_size = get_size($opt->{from});
     my $to_size = get_size($opt->{to});
-    printf "%d%%\n", ($to_size / $from_size) * 100;
+    my $done = $to_size / $from_size;
+    printf "%d%%\n", $done * 100;
+    exit if $done == 1;
     sleep 1
 }
 

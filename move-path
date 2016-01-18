@@ -5,15 +5,16 @@
 use warnings;
 use strict;
 use File::Copy; # For 'move' command
-use File::Basename;
 use Getopt::Long;
+use File::Basename;
 
 my $opt;
 
 GetOptions (
-    "verbose" => \$opt->{verbose},
-    "help"    => \$opt->{usage},
-    "usage"   => \$opt->{usage},
+    "verbose"  => \$opt->{verbose},
+    "help"     => \$opt->{usage},
+    "usage"    => \$opt->{usage},
+    "symlinks" => \$opt->{symlinks},
 )
 or die("\$0: ERROR: invalid command line arguments\n");
 
@@ -22,8 +23,9 @@ sub usage () {
     die <<EOT;
 Usage: \$0 [-usage] [-verbose] [SOURCE_FILE] TARGET_DIR
   where
-    -help    - show this help
-    -verbose - show verbose output
+    -symlinks - move symlinks too
+    -help     - show this help
+    -verbose  - show verbose output
 
 Reads list from STDIN if SOURCE_FILE is not specified.
 EOT
@@ -40,10 +42,8 @@ sub move_path ($$) {
     die "$0: ERROR: Target '$target' is not a directory!\n" if ! -d $target;
     $target =~ s/\/+$//g;
 
-    my($file, $dirs, $suffix) = fileparse($source);
-
     if ( -f $source ) {
-        print "Source '$source' is a regular file.\n";
+        VERBOSE && print "Source '$source' is a regular file.\n";
     } elsif ( -d $source ) {
         opendir(my $dir_fh, $source) || die "$0: Can't opendir '$source': $!\n";
         while (my $file = readdir $dir_fh) {
@@ -51,26 +51,36 @@ sub move_path ($$) {
             die "$0: Can't move '$source' - directory is not empty. (found '$file')\n";
         }
         closedir $dir_fh;
-        if ( -d "$target/$file" ) {
-            print "$0: Target '$target/$file' already exists. Removing source dir '$source'.\n";
+        if ( -d "$target/$source" ) {
+            print "Target '$target/$source' already exists. Removing source dir '$source'.\n";
             rmdir($source) or die "Can't rmdir '$source': $!\n";
+            return;
         }
     } elsif ( -l $source ) {
-        die "Source '$source' is a symlink.\n";
+        if ( ! $opt->{symlinks} ) {
+            print "Skipping '$source' - is a symlink.\n";
+            return;
+        }
     } elsif ( -e $source ) {
-        die "Source '$source' is something else.\n";
+        print "Skipping '$source' - Not a regular file.\n";
+        return;
     } else {
         die "$0: ERROR: '$source' not found: $!\n";
     }
 
-    VERBOSE && print "Want to move '$source' to '$target/$file'\n";
+    VERBOSE && print "Want to move '$source' to '$target/$source'\n";
 
-    if ( -e "$target/$file" ) {
-        die "$0: Can't move '$source' to '$target/$file' - target already exists.\n";
+    my($file, $dirs, $suffix) = fileparse($source);
+    if ( ! -d "$target/$dirs" ) {
+        mkdir ("$target/$dirs") or die "$0: ERROR: Can't mkdir '$target/$dirs': $!\n";
     }
 
-    move ($source, "$target/$file") or die "$0: ERROR: Could not move '$source' to '$target/$source': $!\n";
-    print "'$source' -> '$target/$file'\n";
+    if ( -e "$target/$source" ) {
+        die "$0: Can't move '$source' to '$target/$source' - target already exists.\n";
+    }
+
+    move ($source, "$target/$source") or die "$0: ERROR: Can't move '$source' to '$target/$source': $!\n";
+    print "'$source' -> '$target/$source'\n";
 }
 
 if ( $#ARGV == 1 ){
@@ -78,10 +88,15 @@ if ( $#ARGV == 1 ){
     move_path($source_file, $target_dir);
 } elsif ( $#ARGV == 0 ) {
     my ($target_dir) = (shift);
-    print "Reading list from STDIN.\n";
+    VERBOSE && print "Reading list from STDIN.\n";
+    my @to_move;
     while (defined (my $line = <>)) {
         chomp $line;
-        move_path($line, $target_dir);
+        push @to_move, $line;
+    }
+    for my $source_file (sort {$b cmp $a} @to_move) {
+        # Reverse sort, so parent directory comes last. 
+        move_path($source_file, $target_dir);
     }
 } else {
     usage;

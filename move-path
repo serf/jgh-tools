@@ -1,0 +1,85 @@
+#!/usr/bin/perl
+#
+# Move a file to the same subdirectory path under target dir.
+#
+use warnings;
+use strict;
+use File::Copy; # For 'move' command
+use File::Basename;
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "verbose" => \$opt->{verbose},
+    "help"    => \$opt->{usage},
+    "usage"   => \$opt->{usage},
+)
+or die("\$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: \$0 [-usage] [-verbose] [SOURCE_FILE] TARGET_DIR
+  where
+    -help    - show this help
+    -verbose - show verbose output
+
+Reads list from STDIN if SOURCE_FILE is not specified.
+EOT
+
+}
+usage if $opt->{usage};
+
+sub VERBOSE { $opt->{verbose} }
+
+sub move_path ($$) {
+    my ($source, $target) = (shift, shift);
+    usage if ! $target;
+    die "$0: ERROR: Target directory '$target' does not exist!\n" if ! -e $target;
+    die "$0: ERROR: Target '$target' is not a directory!\n" if ! -d $target;
+    $target =~ s/\/+$//g;
+
+    if ( -f $source ) {
+        print "Source '$source' is a regular file.\n";
+    } elsif ( -d $source ) {
+        opendir(my $dir_fh, $source) || die "$0: Can't opendir '$source': $!\n";
+        while (my $file = readdir $dir_fh) {
+            next if ($file eq "." or $file eq "..");
+            die "$0: Can't move '$source' - directory is not empty. (found '$file')\n";
+        }
+        closedir $dir_fh;
+    } elsif ( -l $source ) {
+        die "Source '$source' is a symlink.\n";
+    } elsif ( -e $source ) {
+        die "Source '$source' is something else.\n";
+    } else {
+        die "$0: ERROR: '$source' not found: $!\n";
+    }
+
+    my($file, $dirs, $suffix) = fileparse($source);
+
+    VERBOSE && print "Want to move '$source' to '$target/$file'\n";
+
+    if ( -e "$target/$file" ) {
+        die "$0: Can't move '$source' to '$target/$file' - target already exists.\n";
+    }
+
+    move ($source, "$target/$file") or die "$0: ERROR: Could not move '$source' to '$target/$source': $!\n";
+    print "'$source' -> '$target/$file'\n";
+}
+
+if ( $#ARGV == 1 ){
+    my ($source_file, $target_dir) = (shift, shift);
+    move_path($source_file, $target_dir);
+} elsif ( $#ARGV == 0 ) {
+    my ($target_dir) = (shift);
+    print "Reading list from STDIN.\n";
+    while (defined (my $line = <>)) {
+        chomp $line;
+        move_path($line, $target_dir);
+    }
+} else {
+    usage;
+}
+

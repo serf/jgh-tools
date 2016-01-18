@@ -40,6 +40,8 @@ sub move_path ($$) {
     die "$0: ERROR: Target '$target' is not a directory!\n" if ! -d $target;
     $target =~ s/\/+$//g;
 
+    my($file, $dirs, $suffix) = fileparse($source);
+
     if ( -f $source ) {
         print "Source '$source' is a regular file.\n";
     } elsif ( -d $source ) {
@@ -49,6 +51,10 @@ sub move_path ($$) {
             die "$0: Can't move '$source' - directory is not empty. (found '$file')\n";
         }
         closedir $dir_fh;
+        if ( -d "$target/$file" ) {
+            print "$0: Target '$target/$file' already exists. Removing source dir '$source'.\n";
+            rmdir($source) or die "Can't rmdir '$source': $!\n";
+        }
     } elsif ( -l $source ) {
         die "Source '$source' is a symlink.\n";
     } elsif ( -e $source ) {
@@ -56,8 +62,6 @@ sub move_path ($$) {
     } else {
         die "$0: ERROR: '$source' not found: $!\n";
     }
-
-    my($file, $dirs, $suffix) = fileparse($source);
 
     VERBOSE && print "Want to move '$source' to '$target/$file'\n";
 

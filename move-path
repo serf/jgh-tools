@@ -91,12 +91,13 @@ if ( $#ARGV == 1 ){
 } elsif ( $#ARGV == 0 ) {
     my ($target_dir) = (shift);
     VERBOSE && print "Reading list from STDIN.\n";
-    my @to_move;
+    my %to_move;
     while (defined (my $line = <>)) {
         chomp $line;
-        push @to_move, $line;
+        # Make it unique
+        $to_move{$line} = 1;
     }
-    for my $source_file (sort {$b cmp $a} @to_move) {
+    for my $source_file (sort {$b cmp $a} keys %to_move) {
         # Reverse sort, so parent directory comes last. 
         move_path($source_file, $target_dir);
     }

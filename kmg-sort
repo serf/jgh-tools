@@ -9,7 +9,7 @@ use Getopt::Std;
 my $data;
 
 my %opts;
-getopts('df:hlrs:', \%opts);
+getopts('df:hlrs:t', \%opts);
 
 if ( $opts{h} ) {
     die <<EOT;
@@ -22,6 +22,7 @@ Where:
   -l - Sort field 4 ( from 'ls -lh' )
   -r - Reverse sort
   -s - Next field to sort on
+  -t - Print total size
 
 EOT
 }
@@ -100,8 +101,12 @@ sub next_field {
 
 }
 
+my $total;
 for my $num ( sort by_size keys %{$data} ) {
 
+    if ( $opts{t} ) {
+        $total += $num;
+    }
     if ( $opts{s} ) {
         for my $line ( sort next_field ( @{$data->{$num}} ) ) {
             print "$line\n";
@@ -111,6 +116,17 @@ for my $num ( sort by_size keys %{$data} ) {
             print "$line\n";
         }
     }
+
+}
+
+if ( $opts{t} ) {
+
+   for my $m (qw( T G M K b )) {
+       if ( $total > $mult{$m} ) {
+           printf "Total: %0.3f%s\n", $total / $mult{$m}, $m;
+           exit;
+       }
+   }
 
 }
 

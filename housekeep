@@ -274,6 +274,7 @@ for my $dir ( keys %{$hk} ) {
                         }
                     }
                 }
+            } elsif ( -f "$dir/$file" ) {
             } else {
                 VERBOSE && print "Ign '$file'\n";
             }

@@ -57,7 +57,7 @@ while (defined (my $line = <>)) {
         next;
     } elsif ( ! defined $line[$field] ) {
         die "No field $field in '$line'\n";
-    } elsif ( $line[$field] =~ /^([\d\.]+)([KMGT])$/ ) {
+    } elsif ( $line[$field] =~ /^([\d\.]+)([bKMGT])$/ ) {
         my ($num,$mult) = ($1, $2);
         my $key = $num * $mult{$mult};
         push @{$data->{$key}}, $line;

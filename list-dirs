@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "verbose" => \$opt->{verbose},
+    "help"    => \$opt->{usage},
+    "usage"   => \$opt->{usage},
+    "mask=s"  => \$opt->{mask},
+    "path=s"  => \$opt->{path},
+    "in=s"    => \$opt->{path},
+)
+or die("\$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: \$0 [-usage] [-verbose] ARGUMENT
+  where
+    -help    - show this help
+    -verbose - show verbose output
+    -mask    - filename mask to look for
+    -path    - directory to look in (defaults to '.')
+    -in      - same as -path
+EOT
+
+}
+usage if $opt->{usage};
+
+#
+#
+#
+$opt->{path} = '.' if ! $opt->{path};
+
+opendir(my $dir_fh, $opt->{path}) ||
+    die "$0: Can't opendir '$opt->{path}': $!\n";
+my @dirs = grep { /^./ && -d "$opt->{path}/$_" } readdir($dir_fh);
+closedir $dir_fh;
+
+for my $dir ( @dirs ) {
+
+    next if $dir eq '.';
+    next if $dir eq '..';
+    if ( $opt->{mask} ) {
+        next if $dir !~ /$opt->{mask}/;
+    }
+    print "$dir\n";
+
+}
+

@@ -119,7 +119,23 @@ if ( defined $opt->{age} ) {
     $hk->{$dir}->{$name}->{age}->{$age} = $action;
 }
 elsif ( defined $opt->{size} ) {
-    $hk->{$dir}->{$name}->{size}->{$opt->{size}} = $action;
+    my $c_size;
+    if ( $opt->{size} =~ /^[<=>]?\d+$/ ) { 
+        $c_size = $opt->{size};
+    } elsif ( $opt->{size} =~ /^([<=>]?)([\d\.]+)([bKMGT])$/ ) {
+        my ($comp,$num,$mult) = ($1, $2, $3);
+        my %mult = (
+            b => 1,
+            K => 1024,
+            M => 1048576,       # 1024 ** 2
+            G => 1073741824,    # 1024 ** 3
+            T => 1099511627776, # 1024 ^4
+        );
+        $c_size = $comp . $num * $mult{$mult};
+    } else {
+        die "$0: ERROR: Invalid size '$opt->{size}'\n";
+    }
+    $hk->{$dir}->{$name}->{size}->{$c_size} = $action;
 }
 elsif ( defined $opt->{md5} ) {
     $hk->{$dir}->{$name}->{md5}->{$opt->{md5}} = $action;

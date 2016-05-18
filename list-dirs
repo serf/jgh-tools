@@ -5,16 +5,20 @@
 use warnings;
 use strict;
 use Getopt::Long;
+use Time::Local;
 
 my $opt;
 
 GetOptions (
-    "verbose" => \$opt->{verbose},
-    "help"    => \$opt->{usage},
-    "usage"   => \$opt->{usage},
-    "mask=s"  => \$opt->{mask},
-    "path=s"  => \$opt->{path},
-    "in=s"    => \$opt->{path},
+    "mask=s"      => \$opt->{mask},
+    "path=s"      => \$opt->{path},
+    "in=s"        => \$opt->{path},
+    "olderthan=s" => \$opt->{older},
+    "newerthan=s" => \$opt->{newer},
+    "verbose"     => \$opt->{verbose},
+    "debug"       => \$opt->{debug},
+    "help"        => \$opt->{usage},
+    "usage"       => \$opt->{usage},
 )
 or die("\$0: ERROR: invalid command line arguments\n");
 
@@ -23,15 +27,70 @@ sub usage () {
     die <<EOT;
 Usage: \$0 [-usage] [-verbose] ARGUMENT
   where
-    -help    - show this help
-    -verbose - show verbose output
     -mask    - filename mask to look for
     -path    - directory to look in (defaults to '.')
     -in      - same as -path
+    -older   - older than YYYYMMDD
+    -newer   - newer than YYYYMMDD
+    -help    - show this help
+    -verbose - show verbose output
+    -debug   - show debug output
+
 EOT
 
 }
 usage if $opt->{usage};
+
+sub VERBOSE { $opt->{verbose} }
+
+sub DEBUG { $opt->{debug} }
+
+sub epoch_midday($) {
+
+    my $epoch_time = shift;
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+        = localtime($epoch_time);
+    my $midday=timelocal(0,0,12,$mday,$mon,$year);
+    return $midday;
+
+}
+
+sub date_midday($) {
+
+    my $date = shift;
+
+    if ( $date =~ /^(20[01]\d)([01]\d)([0-3]\d)$/ ) {
+        DEBUG && print STDERR "Date OK\n";
+        my ($year,$month,$day) = ($1,$2,$3);
+        my $midday=timelocal(0,0,12,$day,$month-1,$year);
+        return $midday;
+    } else {
+        print "($1)($2)($3)\n";
+        die "$0: ERROR: '$date' is not a valid YYYYMMDD date\n";
+    }
+
+}
+
+sub check_mult($) {
+
+    my $age = shift;
+    my $seconds = 0;
+
+    if ( $age =~ /^\d+$/ ) {
+        $seconds = 86400 * $age;
+    } elsif ( $age =~ /^(\d+)d/ ) {
+        $seconds = 86400 * $1;
+    } elsif ( $age =~ /^(\d+)w/ ) {
+        $seconds = 604800 * $1;
+    } elsif ( $age =~ /^(\d+)m/ ) {
+        $seconds = 2678400 * $1;
+    } else {
+        die "$0: ERROR: Don't recognise multiplier (e.g. days,weeks,months) in '$age'\n";
+    }
+    return $seconds;
+
+}
 
 #
 #
@@ -49,6 +108,43 @@ for my $dir ( @dirs ) {
     next if $dir eq '..';
     if ( $opt->{mask} ) {
         next if $dir !~ /$opt->{mask}/;
+    }
+
+    if ( $opt->{older} ) {
+
+        my $before = check_mult($opt->{older});
+
+        if ( $dir =~ /(20[01]\d)([01]\d)([0-3]\d)/ ) {
+            my $age = date_midday("$1$2$3");
+            my $midday_today = epoch_midday(time);
+            if ( $midday_today - $age > $before ) {
+                VERBOSE && print "'$1$2$3' in '$dir' is older ($age) than '$opt->{older}' ($age -> $midday_today > $before)\n";
+            } else {
+                next; # Not older than specified date.
+            }
+        } else {
+            VERBOSE && print "No YYYYMMDD in '$dir'\n";
+            next;
+        }
+
+    }
+    if ( $opt->{newer} ) {
+
+        my $after = check_mult($opt->{newer});
+
+        if ( $dir =~ /(20[01]\d)([01]\d)([0-3]\d)/ ) {
+            my $age = date_midday("$1$2$3");
+            my $midday_today = epoch_midday(time);
+            if ( $midday_today - $age < $after ) {
+                VERBOSE && print "'$1$2$3' in '$dir' is newer ($age) than '$opt->{newer}' ($age -> $midday_today < $after)\n";
+            } else {
+                next; # Not newer than specified date.
+            }
+        } else {
+            VERBOSE && print "No YYYYMMDD in '$dir'\n";
+            next;
+        }
+
     }
     print "$dir\n";
 

@@ -149,6 +149,19 @@ if ( $opt->{log} ) {
     open ($log_fh, '>>', "$opt->{log}") || die "Can't write to '$opt->{log}': $!\n";
 }
 
+sub gzip_file($) {
+    my $file = shift;
+    if ( $opt->{dryrun} ) {
+        print $log_fh "Would gzip $file\n" if $opt->{log};
+        print "Would gzip $file\n";
+    } elsif ( system("/bin/gzip", "-9", $file) == 0 ) {
+        print $log_fh "gzip $file\n" if $opt->{log};
+        print "gzip $file\n";
+    } else {
+        die "ERROR: system gzip -9 '$file' failed: $?\n";
+    }
+}
+    
 sub unlink_file($) {
     my $file = shift;
     if ( $opt->{dryrun} ) {
@@ -195,9 +208,8 @@ sub check_action($$) {
             $year + 1900, $mon + 1, $mday, $hour, $min, $sec,
             $file;
         return 1;
-    } elsif ( $action eq 'gzip' ) {
-        system("/bin/gzip", "-9", $file) == 0
-            or die "system gzip -9 '$file': $?\n";
+    } elsif ( $action eq 'gzip' or $action eq 'gz' ) {
+        gzip_file($file);
         return 1;
     } elsif ( $action eq 'md5' ) {
         INFO && print "Doing md5sum '$file' ... ";

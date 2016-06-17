@@ -30,8 +30,14 @@ Usage: \$0 [-usage] [-verbose] ARGUMENT
     -mask    - filename mask to look for
     -path    - directory to look in (defaults to '.')
     -in      - same as -path
-    -older   - older than YYYYMMDD
-    -newer   - newer than YYYYMMDD
+
+    -older   - older than AGE
+    -newer   - newer than AGE
+      AGE can be:
+        -Xd  - X days (Default)
+        -Xw  - X weeks
+        -Xm  - X months
+
     -help    - show this help
     -verbose - show verbose output
     -debug   - show debug output
@@ -102,6 +108,23 @@ opendir(my $dir_fh, $opt->{path}) ||
 my @dirs = grep { /^./ && -d "$opt->{path}/$_" } readdir($dir_fh);
 closedir $dir_fh;
 
+my ($before, $after) = (0,0);
+
+if ( $opt->{older} ) {
+
+    $before = check_mult($opt->{older});
+    VERBOSE && print "before: $before\n";
+
+}
+if ( $opt->{newer} ) {
+
+    $after = check_mult($opt->{newer});
+    VERBOSE && print "after: $after\n";
+
+}
+
+my $midday_today = epoch_midday(time);
+
 for my $dir ( @dirs ) {
 
     next if $dir eq '.';
@@ -112,29 +135,30 @@ for my $dir ( @dirs ) {
 
     if ( $opt->{older} ) {
 
-        my $before = check_mult($opt->{older});
-
         if ( $dir =~ /(20[01]\d)([01]\d)([0-3]\d)/ ) {
             my $age = date_midday("$1$2$3");
-            my $midday_today = epoch_midday(time);
             if ( $midday_today - $age > $before ) {
                 VERBOSE && print "'$1$2$3' in '$dir' is older ($age) than '$opt->{older}' ($age -> $midday_today > $before)\n";
             } else {
                 next; # Not older than specified date.
             }
+        } elsif ( $dir =~ /(20[01]\d)-([01]\d)-([0-3]\d)/ ) {
+            my $age = date_midday("$1$2$3");
+            if ( $midday_today - $age > $before ) {
+                VERBOSE && print "'$1-$2-$3' in '$dir' is older ($age) than '$opt->{older}' ($age -> $midday_today > $before)\n";
+            } else {
+                next; # Not older than specified date.
+            }
         } else {
-            VERBOSE && print "No YYYYMMDD in '$dir'\n";
+            VERBOSE && print "No YYYY-MM-DD or YYYYMMDD in '$dir'\n";
             next;
         }
 
     }
     if ( $opt->{newer} ) {
 
-        my $after = check_mult($opt->{newer});
-
         if ( $dir =~ /(20[01]\d)([01]\d)([0-3]\d)/ ) {
             my $age = date_midday("$1$2$3");
-            my $midday_today = epoch_midday(time);
             if ( $midday_today - $age < $after ) {
                 VERBOSE && print "'$1$2$3' in '$dir' is newer ($age) than '$opt->{newer}' ($age -> $midday_today < $after)\n";
             } else {

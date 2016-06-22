@@ -1,0 +1,154 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "directory=s" => \$opt->{dir},
+    "oldest"      => \$opt->{oldest},
+    "newest"      => \$opt->{newest},
+    "reverse"     => \$opt->{reverse},
+    "just-age"    => \$opt->{just_age},
+    "age-in=s"    => \$opt->{age_in},
+    "verbose"     => \$opt->{verbose},
+    "help"        => \$opt->{usage},
+    "usage"       => \$opt->{usage},
+)
+or die("\$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: \$0 [-usage] [-verbose] ARGUMENT
+  where
+    -help          - show this help
+    -verbose       - show verbose output
+    -directory=DIR - Directory to list (defaults to '.')
+    -oldest        - show oldest file
+    -newest        - show newest file
+    -reverse       - reverse sort output
+    -just-age      - print the age not filename (must use -age-in too)
+    -age-in=UNITS  - units to display age in
+                     (e.g. yrs, mons, wks, days, hrs, mins, secs)
+
+EOT
+
+}
+usage if $opt->{usage};
+
+my $ages = {
+    years    => 31556926,
+    yrs      => 31556926,
+    months   => 2629744,
+    mons     => 2629744,
+    weeks    => 604800,
+    wks      => 604800,
+    days     => 86400,
+    hours    => 3600,
+    hrs      => 3600,
+    minutes  => 60,
+    mins     => 60,
+    seconds  => 1,
+    secs     => 1
+};
+
+my $seconds;
+if ( $opt->{age_in} ) {
+    if ( $ages->{$opt->{age_in}} ) {
+        $seconds = $ages->{$opt->{age_in}};
+    } else {
+        die "$0: ERROR: Invalid -age-in UNITS '$opt->{age_in}'. See -usage\n";
+    }
+} elsif ( $opt->{just_age} ) {
+    die "$0: ERROR: Option -just-age requires option -age-in to be specified too.\n";
+}
+
+sub stat_file($) {
+
+    my $file = shift;
+    my ($dev,$inode,$mode,$nlink,$uid,$gid,$rdev,$size,
+        $atime,$mtime,$ctime,$blksize,$blocks) = stat($file);
+    return ($atime,$mtime,$size);
+
+}
+
+if ( ! $opt->{dir} ) {
+    $opt->{dir} = '.';
+}
+
+#
+#
+#
+my $files;
+my $now = time;
+opendir(my $dir_fh, $opt->{dir}) || die "$0: Can't opendir '$opt->{dir}': $!\n";
+for my $file ( grep { /^./ && -f "$opt->{dir}/$_" } readdir($dir_fh) ) {
+    my ($atime,$mtime,$size) = stat_file("$opt->{dir}/$file");
+    $files->{$file} = $now - $mtime;
+}
+closedir $dir_fh;
+
+my @by_age;
+for my $file (sort { $files->{$a} <=> $files->{$b} } keys %{$files}) {
+    push @by_age, $file;
+}
+
+if ( $#by_age == -1 ) {
+    print "-1\n";
+    die "$0: No files in '$opt->{dir}'\n";
+}
+
+if ( $opt->{newest} ) {
+
+    if ( $opt->{age_in} ) {
+        if ( $opt->{just_age} ) {
+            printf "%d\n", $files->{$by_age[-1]} / $seconds;
+        } else {
+            printf "%d %-s\n", $files->{$by_age[-1]} / $seconds, $by_age[-1];
+        }
+    } else {
+        print "$by_age[0]\n";
+    }
+
+} elsif ( $opt->{oldest} ) {
+
+    if ( $opt->{age_in} ) {
+        if ( $opt->{just_age} ) {
+            printf "%d\n", $files->{$by_age[0]} / $seconds;
+        } else {
+            printf "%d %-s\n", $files->{$by_age[0]} / $seconds, $by_age[0];
+        }
+    } else {
+        printf "$by_age[-1]\n";
+    }
+
+} else {
+
+    my @sort_order;
+
+    if ( $opt->{reverse} ) {
+        @sort_order = @by_age;
+    } else {
+        @sort_order = reverse(@by_age);
+    }
+
+    if ( $opt->{age_in} ) {
+        if ( $ages->{$opt->{age_in}} ) {
+            for my $file ( @sort_order ) {
+                printf "%d %-s\n", $files->{$file} / $ages->{$opt->{age_in}}, $file;
+            }
+        } else {
+            die "$0: ERROR: Invalid time unit '$opt->{age_in}' - see -usage option.\n";
+        } 
+    } else {
+        for my $file ( @sort_order ) {
+            printf "$file\n";
+        }
+    }
+}
+

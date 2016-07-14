@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-#
+# John Harrison
 #
 use warnings;
 use strict;
@@ -132,41 +132,35 @@ for my $dir ( @dirs ) {
     if ( $opt->{mask} ) {
         next if $dir !~ /$opt->{mask}/;
     }
+    next if -l "$opt->{path}/$dir";
+
+    my ($age,$match);
+    if ( $dir =~ /(20[01]\d)([01]\d)([0-3]\d)/ ) {
+        $age = date_midday("$1$2$3");
+        $match = "$1$2$3";
+    } elsif ( $dir =~ /(20[01]\d)-([01]\d)-([0-3]\d)/ ) {
+        $age = date_midday("$1$2$3");
+        $match = "$1-$2-$3";
+    } elsif ( $opt->{newer} || $opt->{older} ) {
+        VERBOSE && print "No YYYY-MM-DD or YYYYMMDD in '$dir'\n";
+        next;
+    }
 
     if ( $opt->{older} ) {
 
-        if ( $dir =~ /(20[01]\d)([01]\d)([0-3]\d)/ ) {
-            my $age = date_midday("$1$2$3");
-            if ( $midday_today - $age > $before ) {
-                VERBOSE && print "'$1$2$3' in '$dir' is older ($age) than '$opt->{older}' ($age -> $midday_today > $before)\n";
-            } else {
-                next; # Not older than specified date.
-            }
-        } elsif ( $dir =~ /(20[01]\d)-([01]\d)-([0-3]\d)/ ) {
-            my $age = date_midday("$1$2$3");
-            if ( $midday_today - $age > $before ) {
-                VERBOSE && print "'$1-$2-$3' in '$dir' is older ($age) than '$opt->{older}' ($age -> $midday_today > $before)\n";
-            } else {
-                next; # Not older than specified date.
-            }
+        if ( $midday_today - $age > $before ) {
+            VERBOSE && print "'$match' in '$dir' is older ($age) than '$opt->{older}' ($age -> $midday_today > $before)\n";
         } else {
-            VERBOSE && print "No YYYY-MM-DD or YYYYMMDD in '$dir'\n";
-            next;
+            next; # Not older than specified date.
         }
 
     }
     if ( $opt->{newer} ) {
 
-        if ( $dir =~ /(20[01]\d)([01]\d)([0-3]\d)/ ) {
-            my $age = date_midday("$1$2$3");
-            if ( $midday_today - $age < $after ) {
-                VERBOSE && print "'$1$2$3' in '$dir' is newer ($age) than '$opt->{newer}' ($age -> $midday_today < $after)\n";
-            } else {
-                next; # Not newer than specified date.
-            }
+        if ( $midday_today - $age < $after ) {
+            VERBOSE && print "'$match' in '$dir' is newer ($age) than '$opt->{newer}' ($age -> $midday_today < $after)\n";
         } else {
-            VERBOSE && print "No YYYYMMDD in '$dir'\n";
-            next;
+            next; # Not newer than specified date.
         }
 
     }

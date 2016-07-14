@@ -12,18 +12,19 @@ my $opt;
 
 GetOptions (
     "directory=s" => \$opt->{directory},
-    "name=s"   => \$opt->{name},
-    "ext=s"    => \$opt->{ext},
-    "age=s"    => \$opt->{age},
-    "size=s"   => \$opt->{size},
-    "md5=s"    => \$opt->{md5},
-    "action=s" => \$opt->{action},
-    "dryrun"   => \$opt->{dryrun},
-    "log=s"    => \$opt->{log},
-    "info"     => \$opt->{info},
-    "verbose"  => \$opt->{verbose},
-    "help"     => \$opt->{usage},
-    "usage"    => \$opt->{usage},
+    "name=s"      => \$opt->{name},
+    "ext=s"       => \$opt->{ext},
+    "exclude=s"   => \$opt->{exclude},
+    "age=s"       => \$opt->{age},
+    "size=s"      => \$opt->{size},
+    "md5=s"       => \$opt->{md5},
+    "action=s"    => \$opt->{action},
+    "dryrun"      => \$opt->{dryrun},
+    "log=s"       => \$opt->{log},
+    "info"        => \$opt->{info},
+    "verbose"     => \$opt->{verbose},
+    "help"        => \$opt->{usage},
+    "usage"       => \$opt->{usage},
 )
 or die("$0: ERROR: invalid command line arguments\n");
 
@@ -38,6 +39,7 @@ Usage: $0 -dir DIR -name NAME -{criteria} VALUE -action ACTION\n";
     -name=FILENAME_MASK  - Files to match
     -ext=FILE_EXTENSION  - Extension to match
     (name overides ext if both are given)
+    -exclude=FILENAME_MASK - Files to exclude
 
   criteria:
     -age=AGE             - Purge if older than AGE
@@ -236,6 +238,13 @@ for my $dir ( keys %{$hk} ) {
         (my $glob = $mask) =~ s/\*/\.*/g;
         FILE: for my $file ( readdir($dir_fh) ) {
             if ( $file =~ /^$glob$/ ) {
+                if ( $opt->{exclude} ) {
+                    (my $exclude = $opt->{exclude}) =~ s/\*/\.*/g;
+                    if ( $file =~ /$exclude/ ) {
+                        VERBOSE && print "Excluding $file\n";
+                        next FILE;
+                    }
+                }
                 VERBOSE && print "$file ";
                 if ( -f "$dir/$file" ) {
                     #
@@ -245,6 +254,11 @@ for my $dir ( keys %{$hk} ) {
                     @stat{ qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks) }
                         = stat("$dir/$file");
                     $stat = \%stat;
+
+                    if ( ! $stat->{mtime} ) {
+                        print STDERR "WARNING: '$dir/$file' was removed before stat ran.\n";
+                        next FILE;
+                    }
 
                     for my $age ( sort { $b <=> $a } keys %{$hk->{$dir}->{$mask}->{age}} ) {
                         my $newest = $time - $age;

@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Find ();
+
+# for the convenience of &wanted calls, including -eval statements:
+use vars qw/*name *dir *prune/;
+*name   = *File::Find::name;
+*dir    = *File::Find::dir;
+*prune  = *File::Find::prune;
+
+sub wanted;
+
+sub does_dir_have_files {
+    return -1 if not -e $_[0];   # does not exist
+    return -2 if not -d $_[0];   # is not a directory
+    opendir my $dir, $_[0] or    # likely a permissions issue
+        die "Can't opendir '".$_[0]."': $!\n";
+    readdir $dir;
+    readdir $dir;
+    return 0 if( readdir $dir ); # 3rd times a charm
+    return 1;
+}
+
+
+# Traverse desired filesystems
+File::Find::find({wanted => \&wanted}, '.');
+exit;
+
+
+sub wanted {
+    my $rc = does_dir_have_files( $_ );
+    if( $rc == -2 ) {
+        # is not a directory
+    } elsif( !$rc ) {
+        # is not empty
+    } elsif ( $rc == 1 ) {
+        print "$name\n";
+    } elsif( $rc == -1 ) {
+        print STDERR "$name does not exist\n";
+    }
+}
+
+

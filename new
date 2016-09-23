@@ -6,7 +6,7 @@ use warnings;
 use strict;
 
 my $indent = 0;
-our ( $c, $d, $f, $h, $o, $p, $u, $w, $x, $l );
+our ( $c, $d, $f, $h, $o, $p, $u, $w, $x, $l, $t );
 
 if ( $u ) {
     print <<EOT;
@@ -17,13 +17,14 @@ Usage: $0 [-h] [-d] [-f] [-c] [-o] [-u]
       -w = code for writing to a file.
       -p = code for writing to a pipe.
       -c = specify file on command line
+      -x = Execute command (actually open a pipe from a command)
       -h = skip header (hash bang, warnings & strictness pragmas)
            (i.e. just generate inline snippet)
+      -l = Getopt::Long
+      -t = code for printing date and time
       -o = Use old (pre 5.6) Perl syntax TYPEGLOB & -w flag
            instead of Perl 5.6 or newer lexical filehandles & use warnings; pragma
       -u = This usage
-      -x = Execute command (actually open a pipe from a command)
-      -l = Getopt::Long
 
   deprecated:
       -n = Was 'new' - now use '-o' for old
@@ -71,6 +72,7 @@ EOT
 
 }
 usage if $opt->{usage};
+
 EOL
 
 }
@@ -106,6 +108,20 @@ EOT
 }
 
 $f = 1 if $x;
+
+if ( $t ) {
+
+print <<'EOT';
+sub dtg ($) {
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(shift);
+    return sprintf "%4d-%02d-%02d %02d:%02d:%02d",
+        $year + 1900, $mon + 1, $mday, $hour, $min, $sec;
+}
+
+my $dtg = dtg(time);
+EOT
+
+}
 
 if ( $f || $w || $p ) {
 

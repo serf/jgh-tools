@@ -23,6 +23,7 @@ GetOptions (
     "log=s"       => \$opt->{log},
     "info"        => \$opt->{info},
     "verbose"     => \$opt->{verbose},
+    "debug"       => \$opt->{debug},
     "help"        => \$opt->{usage},
     "usage"       => \$opt->{usage},
 )
@@ -66,8 +67,9 @@ my $time = time;
 
 my $hk;
 
-sub VERBOSE { $opt->{verbose} };
 sub INFO { $opt->{info} };
+sub VERBOSE { $opt->{verbose} };
+sub DEBUG { $opt->{debug} };
 
 sub to_secs ($) {
     my $spec = shift;
@@ -93,7 +95,7 @@ sub to_secs ($) {
 }
 
 die "Usage: ERROR: Must provide a directory. See: $0 -usage\n" if ! defined $opt->{directory};
-my $dir = $opt->{directory};
+(my $dir = $opt->{directory}) =~ s|/+$||g;
 
 my $name;
 if ( $opt->{name} ) {
@@ -290,7 +292,7 @@ for my $dir ( keys %{$hk} ) {
                                 next FILE;
                             }
                         } else {
-                            die "Invalid size spec :$c_size: (can use size:0,<X,=X,>X) (size = $stat->{size})\n";
+                            die "Invalid size spec :$c_size: (can use size:0,'<X','=X','>X') (size = $stat->{size})\n";
                         }
                         my $res = check_action( $hk->{$dir}->{$mask}->{size}->{$c_size}, "$dir/$file" );
                         if ( $res == 1 ) {

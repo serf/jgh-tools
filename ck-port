@@ -7,13 +7,14 @@ use Getopt::Long;
 
 my %opts;
 GetOptions(
-    'h=s'   => \$opts{host},
-    'p=s'   => \$opts{port},
-    't=s'   => \$opts{timeout},
-    'd'   => \$opts{debug},
+    'host=s'    => \$opts{host},
+    'port=s'    => \$opts{port},
+    'timeout=s' => \$opts{timeout},
+    'errors'    => \$opts{errs},
+    'dtg'       => \$opts{dtg},
 );
 
-die "Usage: $0 -h HOST -p PORT [-d]\n"
+die "Usage: $0 -host=HOST -port=PORT -timeout=TIMEOUT [-dtg] [-errors]\n"
     if ! $opts{host} || ! $opts{port};
 
 $opts{timeout} = 0 if ! $opts{timeout};
@@ -27,9 +28,19 @@ my $socket = IO::Socket::INET->new(
     Timeout   => $opts{timeout},
 );
 
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)
+    = gmtime(time);
+
 if ( $socket ) {
 
-    print "Connected to $opts{host}:$opts{port} OK\n";
+    if ( ! $opts{errs} ) {
+
+        printf "%4d-%02d-%02d %02d:%02d:%02d ",
+            $year + 1900, $mon + 1, $mday, $hour, $min, $sec if $opts{dtg};
+
+        print "Connected to $opts{host}:$opts{port} OK\n";
+
+    }
 
     $socket->autoflush(1);
 
@@ -44,8 +55,14 @@ if ( $socket ) {
     #
     open(STDERR, ">&STDOUT") || die "Can't dup STDOUT: $!\n";
     my $reason = $!;
-    $reason = 'Timeout' if $reason eq 'Illegal seek';
-    $reason = 'Host not found' if $reason eq 'Invalid argument';
+    if ( $reason eq 'Illegal seek' ) {
+        $reason = 'Timeout';
+    } elsif ( $reason eq 'Inappropriate ioctl for device' ) {
+        $reason = 'Timeout'; # Linux
+    } elsif ( $reason eq 'Invalid argument' ) {
+        $reason = 'Host not found';
+    }
+    printf STDERR "%4d-%02d-%02d %02d:%02d:%02d ", $year + 1900, $mon + 1, $mday, $hour, $min, $sec if $opts{dtg};
     die "$myname: Can't connect to '$opts{host}:$opts{port}': $reason\n";
 
 }

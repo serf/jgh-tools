@@ -56,6 +56,27 @@ sub move_path ($$) {
             print "Target '$target/$source' already exists. Removing source dir '$source'.\n";
             rmdir($source) or die "Can't rmdir '$source': $!\n";
             return;
+        } else {
+            # move falls over on empty directories, so we will try and make a copy ourselves.
+            my $res = mkdir("$target/$source");
+            # if the path to the directory doesn't exist, make it dir by dir.
+            if ( $res == 0 ) {
+                my @bits = split('/', "$target/$source");
+                my $path = shift(@bits);
+                for my $bit ( @bits ) {
+                    $path = "$path/$bit";
+                    if ( ! -d $path ) {
+                        mkdir ($path) or die "I can't mkdir '$path': $!\n";
+                    }
+                }
+            }
+            my @stat = stat($source) or die "Can't stat '$source': $!\n"; 
+            chown ($stat[4], $stat[5], "$target/$source") or die "Can't chown $stat[4]:$stat[5] '$target/$source': $!\n";
+            my $mode = sprintf "%o", 07777 & $stat[2];
+            chmod ($mode, "$target/$source") or die "Can't chmod $mode '$target/$source': $!\n";
+            rmdir($source) or die "Can't rmdir '$source': $!\n";
+            print "'$source' -> '$target/$source'\n";
+            return;
         }
     } elsif ( -l $source ) {
         if ( ! $opt->{symlinks} ) {

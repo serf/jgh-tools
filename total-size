@@ -3,34 +3,58 @@
 # John Harrison
 #
 use strict;
-use Getopt::Std;
+use Getopt::Long;
 
-my %opts;
-getopts('bkmgfnc:i:h', \%opts);
+my $opt;
 
-if ( $opts{h} ) {
+GetOptions (
+    "du"        => \$opt->{du},
+    "duk"       => \$opt->{duk},
+    "lsh"       => \$opt->{lsh},
+    "find"      => \$opt->{find},
+    "numeric"   => \$opt->{numeric},
+    "as=s"      => \$opt->{as},
+    "units=s"   => \$opt->{units},
+    "column=s"  => \$opt->{column},
+    "display=s" => \$opt->{display},
+    "verbose"   => \$opt->{verbose},
+    "help"      => \$opt->{usage},
+    "usage"     => \$opt->{usage},
+)
+or die("$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
     die <<EOT;
-Usage: $0 -[b|k|m|g] -[f|n|c COL] -[i 512|kb] -[h]
+Usage: $0 -as=[b|k|m|g] [-column=COLUMN] -[f|n|c COL] -[i 512|kb] [-usage] [-verbose]
 Where:
-  -b - Show total in bytes
-  -k - Show total in kilobytes
-  -m - Show total in megabytes
-  -g - Show total in gigabytes
+  -as:
+    b - Show total as bytes
+    k - Show total as kilobytes
+    m - Show total as megabytes
+    g - Show total as gigabytes
 
-Default output is in the most appropriate units for the size.
+Default output is as the most appropriate units for the size.
 
-  -f - Sum 7th column (find -ls format)
-  -n - Sum 1st colum (list of numbers)
-  -c - Sum column COL
+  -column=COL - Sum column COL
 
 Default column is 5, to sum the output of 'ls -l'
 
-  -i - Input units [512 or kb]
+  -units=UNITS -  Input units [512 or kb]
 
-  -h - Show this help
+  -find    - Sum 7th column (find -ls format)
+  -numeric - Sum 1st column (list of numbers)
+  -du      - Sum 1st column (numbers with G,M,K - du -sh output)
+  -duk     - Sum 1st column (numbers in KB - do -sk output)
+  -lsh     - Sum 5th column, but with G,M,K
+
+  -help    - show this help
+  -verbose - show verbose output
 
 EOT
+
 }
+usage if $opt->{usage};
 
 my $div = {
     b => 1,
@@ -47,36 +71,86 @@ my $col = 4;
 my $car = '-';
 
 # Find format
-if ( $opts{f} ) {
+if ( $opt->{find} ) {
    $col = 6;
    $car = '[0-9]';
-} elsif ( $opts{c} ) {
-   $col = $opts{c} -1;
+} elsif ( $opt->{column} ) {
+   $col = $opt->{column} -1;
    $car = '.';
-} elsif ( $opts{n} ) {
+} elsif ( $opt->{numeric} ) {
+   $col = 0;
+   $car = '[0-9]';
+} elsif ( $opt->{du} ) {
    $col = 0;
    $car = '[0-9]';
 }
 
 my $ip = 1;
-if ( $opts{i} ) {
-    if ( $opts{i} =~ /^\d+$/ ) {
-        $ip = $opts{i}; 
+if ( $opt->{units} ) {
+    if ( $opt->{units} =~ /^\d+$/ ) {
+        $ip = $opt->{units}; 
     } else {
         for my $m ( keys ( %{$div} ) ) {
-            if ( $opts{i} eq $m ) {
+            if ( $opt->{units} eq $m ) {
                 $ip = $div->{$m};
             }
         }
     }
 }
 
-while (<>) {
+sub in_kb($$) {
+    my ($num, $units) = (shift, shift);
+    for my $mult qw(g m k b) {
+        if ( lc($units) eq $mult ) {
+            return $num * $div->{$mult};
+        }
+    }
+    return -1;
 
-    next if $_ !~ /^$car/;
-    my @line = split(/\s+/,$_);
-    next if $line[$col] !~ /^\d+$/;
-    $total += $line[$col] * $ip;
+}
+
+LINE: while (defined (my $line = <>)) {
+
+    next if $line !~ /\d+/;
+    $line =~ s/^\s+//g;
+    chomp $line;
+    my @line = split(/\s+/,$line);
+    if ( $opt->{find} ) {
+        next if $line[6] !~ /(\d+)/;
+        $total += $line[6];
+    } elsif ( $opt->{du} ) {
+        if ( $line[0] =~ /^([\d\.]+)([GMK])/ ) {
+            $total += in_kb($1, $2);
+        } elsif ( $line[0] =~ /^\d+$/ ) {
+            $total += in_kb($1, 'K');
+        } else {
+            print "Bad line? [$line[0]]\n";
+        }
+        next LINE;
+    } elsif ( $opt->{duk} ) {
+        if ( $line[0] =~ /^\d+$/ ) {
+            $total += in_kb($line[0], 'k');
+        } else {
+            print "Bad line? [$line[0]]\n";
+        }
+        next LINE;
+    } elsif ( $opt->{lsh} ) {
+        if ( $line[4] =~ /^([\d\.]+)([GMK])/ ) {
+            $total += in_kb($1, $2);
+        } else {
+            print "Bad line? [$line[0]]\n";
+        }
+        next LINE;
+    } else {
+        # Default to 'ls' output.
+        next LINE if $#line < 8;
+        if ( $line[4] !~ /(\d+)/ ) {
+            print "Bad line? [$line]\n";
+            next LINE;
+        }
+        $total += $line[4];
+        next LINE;
+    }
 
 }
 
@@ -96,7 +170,7 @@ sub show($) {
 
 for my $mult qw(g m k b) {
 
-    if ( $opts{$mult} ) {
+    if ( $opt->{as} && $opt->{as} eq $mult ) {
         show($mult);
     }
 

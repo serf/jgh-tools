@@ -1,0 +1,121 @@
+#!/usr/bin/perl
+#
+# Recursively search subdirectories
+# list any which contain files or dirs with dates in their names
+# without descending into the dated directories.
+#
+# John Harrison
+#
+use warnings;
+use strict;
+use Getopt::Long;
+
+my $opt;
+
+GetOptions (
+    "dir=s"   => \$opt->{dir},
+    "files"   => \$opt->{files},
+    "verbose" => \$opt->{verbose},
+    "help"    => \$opt->{usage},
+    "usage"   => \$opt->{usage},
+)
+or die("\$0: ERROR: invalid command line arguments\n");
+
+sub usage () {
+
+    die <<EOT;
+Usage: $0 -dir=DIRECTORY [-files] [-usage] [-verbose]
+  where
+    -dir     - directory to search
+    -files   - also list dirs with files
+    -help    - show this help
+    -verbose - show verbose output
+EOT
+
+}
+usage if $opt->{usage};
+usage if ! $opt->{dir};
+
+my $to_check;
+my $housekeep;
+my $done;
+
+sub VERBOSE { $opt->{verbose}; }
+
+sub check_dir($) {
+    #
+    # list top-level directories in this directory
+    #
+    my $check = shift;
+    opendir(my $dir_fh, $check) || die "$0: Can't opendir '$check': $!\n";
+    my @entries = grep { /^./ && -e "$check/$_" } readdir($dir_fh);
+    closedir $dir_fh;
+
+    ENT: for my $ent ( @entries ) {
+
+        next ENT if $ent eq '.';    # Skip self
+        next ENT if $ent eq '..';   # Skip parent
+        if ( -f "$check/$ent" ) {
+            
+            $housekeep->{$check} = 1 if $opt->{files};
+            next ENT; # Skip files
+
+        }
+        my $this = "$check/$ent";
+        next ENT if $done->{$this}; # Don't search twice
+        VERBOSE && print STDERR "Checking $this\n";
+        #
+        # If the directory has 6 numbers in a row
+        # we'll take that to be YYMMDD / YYYYMMDD or similar
+        #
+        if ( $ent =~ /\d{6}/ ) {
+            #
+            # If it has a date we will purge the parent
+            #
+            $housekeep->{$check} = 1;
+        } else {
+            #
+            # If it has no date, we queue it to search too
+            #
+            $to_check->{$this} = 1;
+        }
+
+    }
+    #
+    # Remove searched directory from list
+    #
+    delete $to_check->{$check};
+    #
+    # Make sure we don't search it twice.
+    #
+    $done->{$check} = 1;
+
+}
+
+#
+# Seed the search with the top directory
+#
+$to_check->{$opt->{dir}} = 1;
+my $remaining = 1;
+
+while ( $remaining > 0 ) {
+
+    #
+    # Poll through till check_dir stops
+    # adding new directories to search.
+    #
+    for my $dir ( keys %{$to_check} ) {
+        check_dir ($dir);
+    }
+    $remaining = keys %{$to_check};
+
+}
+
+#
+# Print the list of directories which
+# have dated directories inside them.
+#
+for my $dir ( sort keys %{$housekeep} ) {
+    print "$dir\n";
+}
+

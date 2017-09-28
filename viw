@@ -8,26 +8,36 @@
 # to your .rc files
 #
 
-EDITOR=/usr/bin/vi
-
-if [[ -x /usr/bin/vim ]]
-then
-    EDITOR=/usr/bin/vim
-fi
-
-if [[ "$1" = "-c" ]]
-then
-    shift
-    if [[ -x /bin/cat ]]
+for EDITOR in /usr/bin/vim /usr/local/bin/vim /usr/bin/vim $(which vim) $(which vi)
+do
+    if [[ -x $EDITOR ]]
     then
-        EDITOR=/bin/cat
-    elif [[ -x /usr/bin/cat ]]
-    then
-        EDITOR=/usr/bin/cat
-    else
-        EDITOR=$(which cat)
+        break
     fi
-fi
+done
+
+case "$1" in
+"-c" )
+    shift
+    for EDITOR in /bin/cat /usr/bin/cat $(which cat)
+    do
+        if [[ -x $EDITOR ]]
+        then
+            break
+        fi
+    done
+;;
+"-l" )
+    shift
+    for EDITOR in /bin/less /usr/bin/less $(which less)
+    do
+        if [[ -x $EDITOR ]]
+        then
+            break
+        fi
+    done
+;;
+esac
 
 COMMAND=$(which $@)
 

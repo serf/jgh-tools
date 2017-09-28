@@ -4,12 +4,14 @@ use warnings;
 use strict;
 use IO::Socket;
 use Getopt::Long;
+use Sys::Hostname;
 
 my %opts;
 GetOptions(
     'host=s'    => \$opts{host},
     'port=s'    => \$opts{port},
     'timeout=s' => \$opts{timeout},
+    'from'      => \$opts{from},
     'errors'    => \$opts{errs},
     'dtg'       => \$opts{dtg},
 );
@@ -38,13 +40,19 @@ if ( $socket ) {
         printf "%4d-%02d-%02d %02d:%02d:%02d ",
             $year + 1900, $mon + 1, $mday, $hour, $min, $sec if $opts{dtg};
 
-        print "Connected to $opts{host}:$opts{port} OK\n";
+        if ( $opts{from} ) {
+            my $host = hostname;
+            print "Connected to $opts{host}:$opts{port} from $host OK\n";
+        } else {
+            print "Connected to $opts{host}:$opts{port} OK\n";
+        }
 
     }
 
     $socket->autoflush(1);
 
     close $socket;
+
 
 } else {
 
@@ -63,7 +71,12 @@ if ( $socket ) {
         $reason = 'Host not found';
     }
     printf STDERR "%4d-%02d-%02d %02d:%02d:%02d ", $year + 1900, $mon + 1, $mday, $hour, $min, $sec if $opts{dtg};
-    die "$myname: Can't connect to '$opts{host}:$opts{port}': $reason\n";
+    if ( $opts{from} ) {
+        my $host = hostname;
+        die "$myname: Can't connect to '$opts{host}:$opts{port}' from $host: $reason\n";
+    } else {
+       die "$myname: Can't connect to '$opts{host}:$opts{port}': $reason\n";
+    }
 
 }
 

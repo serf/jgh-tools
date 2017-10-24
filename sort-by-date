@@ -17,6 +17,9 @@ GetOptions (
     "ls"        => \$opt->{ls},
     "find"      => \$opt->{find},
     "nodate"    => \$opt->{nodate},
+    "day=s"   => \$opt->{day},
+    "month=s"   => \$opt->{month},
+    "year=s"   => \$opt->{year},
 )
 or die("\$0: ERROR: invalid command line arguments\n");
 
@@ -69,11 +72,21 @@ if ( $opt->{find} ) {
     $off = 5;
 } elsif ( $opt->{netbackup} ) {
     $off = 4;
+} elsif ( $opt->{month} ) {
+    $off = $opt->{month};
 }
 
 my $dom = $off+1;
 my $yt = $off+2;
 my $file = $off+3;
+
+if ( $opt->{day} ) {
+    $dom = $opt->{day};
+}
+if ( $opt->{year} ) {
+    $yt = $opt->{year};
+}
+
 
 while (defined (my $line = <>)) {
 

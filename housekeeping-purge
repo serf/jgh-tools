@@ -13,6 +13,7 @@ my $opt;
 GetOptions (
     "directory=s" => \$opt->{directory},
     "name=s"      => \$opt->{name},
+    "user=s"      => \$opt->{user},
     "ext=s"       => \$opt->{ext},
     "exclude=s"   => \$opt->{exclude},
     "age=s"       => \$opt->{age},
@@ -38,6 +39,7 @@ Usage: $0 -dir DIR -name NAME -{criteria} VALUE -action ACTION\n";
 
   mask:
     -name=FILENAME_MASK  - Files to match
+    -user=USER           - File owner to match
     -ext=FILE_EXTENSION  - Extension to match
     (name overides ext if both are given)
     -exclude=FILENAME_MASK - Files to exclude
@@ -230,7 +232,14 @@ sub check_action($$) {
 
 }
 
-my $statfields = [qw(dev ino mode nlink uid gid rdev size atime mtime ctime blksize blocks)];
+my (%uid, $uid);
+if ( $opt->{user} ) {
+    while (my (@pw) = getpwent) {
+        $uid{$pw[0]} = $pw[2];
+    }
+    $uid = $uid{$opt->{user}};
+    die "$0: Couldn't get UID for '$opt->{user}'\n" if ! $uid;
+}
 
 for my $dir ( keys %{$hk} ) {
     INFO && print "Dir: [$dir]\n";
@@ -260,6 +269,12 @@ for my $dir ( keys %{$hk} ) {
                     if ( ! $stat->{mtime} ) {
                         print STDERR "WARNING: '$dir/$file' was removed before stat ran.\n";
                         next FILE;
+                    }
+
+                    if ( $opt->{user} ) {
+                        if ( $stat->{uid} != $uid ) {
+                            next FILE;
+                        }
                     }
 
                     for my $age ( sort { $b <=> $a } keys %{$hk->{$dir}->{$mask}->{age}} ) {

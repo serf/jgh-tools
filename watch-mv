@@ -15,6 +15,7 @@ GetOptions (
     "to=s"    => \$opt->{to},
     "help"    => \$opt->{usage},
     "usage"   => \$opt->{usage},
+    "tick"    => \$opt->{tick},
 )
 or die("\$0: ERROR: invalid command line arguments\n");
 
@@ -25,6 +26,7 @@ Usage: \$0 [-usage] [-verbose] ARGUMENT
   where
     -from    - file copying from
     -to      - file copying to
+    -tick    - % ticking over, not scrolling
     -help    - show this help
     -verbose - show verbose output
 EOT
@@ -42,11 +44,20 @@ sub get_size ($) {
 
 die "Usage: $0 -from FROM_FILE -to TO_FILE\n" if ! $opt->{from} || ! $opt->{to};
 
+if ( $opt->{tick} ) {
+    printf "\e[H\e[2J";
+
+}
 while ( 1 ) {
     my $from_size = get_size($opt->{from});
     my $to_size = get_size($opt->{to});
     my $done = $to_size / $from_size;
-    printf "%d%%\n", $done * 100;
+    if ( $opt->{tick} ) {
+        # printf "\e[1;1H%d%%\e]0;\n", $done * 100;
+        printf "\e[1;0H%d%%\e]0;\n", $done * 100;
+    } else {
+        printf "%d%%\n", $done * 100;
+    }
     exit if $done == 1;
     sleep 1
 }

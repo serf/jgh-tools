@@ -11,8 +11,8 @@ use File::Copy;
 my $editor;
 my @editors = (qw(
     /usr/bin/vim
-    /usr/bin/vi
     /bin/vim
+    /usr/bin/vi
     /bin/vi
     /bin/vim.exe
 ));

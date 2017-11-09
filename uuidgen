@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+#
+#
+#
+use warnings;
+use strict;
+use Sys::Hostname;
+use Digest::MD5 qw(md5_hex);
+my $host = hostname();
+my $time = time;
+
+my @bits = unpack( 'a8 a4 a4 a4 a12', md5_hex("$host.$time") );
+
+print join("-", @bits), $/;
+

@@ -9,24 +9,24 @@ use Getopt::Long;
 my $opt;
 
 GetOptions (
-    "reverse"   => \$opt->{reverse},
-    "verbose"   => \$opt->{verbose},
-    "help"      => \$opt->{usage},
-    "usage"     => \$opt->{usage},
-    "netbackup" => \$opt->{netbackup},
-    "ls"        => \$opt->{ls},
-    "find"      => \$opt->{find},
-    "nodate"    => \$opt->{nodate},
-    "day=s"   => \$opt->{day},
-    "month=s"   => \$opt->{month},
-    "year=s"   => \$opt->{year},
+    "reverse"   => $opt->{reverse},
+    "verbose"   => $opt->{verbose},
+    "help"      => $opt->{usage},
+    "usage"     => $opt->{usage},
+    "netbackup" => $opt->{netbackup},
+    "ls"        => $opt->{ls},
+    "find"      => $opt->{find},
+    "nodate"    => $opt->{nodate},
+    "day=s"   => $opt->{day},
+    "month=s"   => $opt->{month},
+    "year=s"   => $opt->{year},
 )
-or die("\$0: ERROR: invalid command line arguments\n");
+or die("$0: ERROR: invalid command line arguments\n");
 
 sub usage () {
 
     die <<EOT;
-Usage: \$0 [-usage] [-verbose] ARGUMENT
+Usage: $0 [-usage] [-verbose] ARGUMENT
   where
     -help      - show this help
     -verbose   - show verbose output

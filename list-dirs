@@ -25,7 +25,7 @@ or die("\$0: ERROR: invalid command line arguments\n");
 sub usage () {
 
     die <<EOT;
-Usage: \$0 [-usage] [-verbose] ARGUMENT
+Usage: $0 [-usage] [-verbose] ARGUMENT
   where
     -mask    - filename mask to look for
     -path    - directory to look in (defaults to '.')

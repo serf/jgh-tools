@@ -10,22 +10,22 @@ use Getopt::Long;
 my $opt;
 
 GetOptions (
-    "verbose" => \$opt->{verbose},
-    "help"    => \$opt->{usage},
-    "usage"   => \$opt->{usage},
-    "old=s"   => \$opt->{old},
-    "new=s"   => \$opt->{new},
-    "file=s"  => \$opt->{file},
-    "list=s"  => \$opt->{list},
-    "backup"  => \$opt->{backup},
-    "now"     => \$opt->{now},
+    "verbose" => $opt->{verbose},
+    "help"    => $opt->{usage},
+    "usage"   => $opt->{usage},
+    "old=s"   => $opt->{old},
+    "new=s"   => $opt->{new},
+    "file=s"  => $opt->{file},
+    "list=s"  => $opt->{list},
+    "backup"  => $opt->{backup},
+    "now"     => $opt->{now},
 )
-or die("\$0: ERROR: invalid command line arguments\n");
+or die("$0: ERROR: invalid command line arguments\n");
 
 sub usage () {
 
     die <<EOT;
-Usage: \$0 [-usage] [-verbose] ARGUMENT
+Usage: $0 [-usage] [-verbose] ARGUMENT
   where
     -help    - show this help
     -verbose - show verbose output

@@ -19,12 +19,12 @@ GetOptions (
     "help"        => \$opt->{usage},
     "usage"       => \$opt->{usage},
 )
-or die("\$0: ERROR: invalid command line arguments\n");
+or die("$0: ERROR: invalid command line arguments\n");
 
 sub usage () {
 
     die <<EOT;
-Usage: \$0 [-usage] [-verbose] ARGUMENT
+Usage: $0 [-usage] [-verbose] ARGUMENT
   where
     -help          - show this help
     -verbose       - show verbose output
